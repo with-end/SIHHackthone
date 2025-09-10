@@ -125,7 +125,7 @@ export default function SubmitReport() {
       );
       if (imageFile) formData.append("image", imageFile);
 
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/reports/:${nagarId}`, formData, {
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

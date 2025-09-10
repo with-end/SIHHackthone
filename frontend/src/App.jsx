@@ -28,7 +28,8 @@ import Mapp from './pages/Map'
 import OfficerInfo from './pages/Officer'
 import DepartmentLogin from './pages/DepartLog'
 import Login from './pages/Login'
-import Combo from './pages/combo' // for adding nagarpalika it is used 
+import Combo from './pages/combo' // for adding nagarpalika it is used
+import Verifyer from './pages/Verifyer' 
 
 
 function App() {
@@ -62,7 +63,7 @@ function App() {
           <Route path="officers" element={<OfficerInfo/>} />
         </Route>
 
-
+        <Route path="verify" element={<Verifyer/>}/>
        
         <Route path="/department/:deptId" element={<OfficeLayout mode="department" />}>
           {/* <Route index element={<DepartmentDashboard />} />

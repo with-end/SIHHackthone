@@ -59,7 +59,7 @@ export default function UserSelection() {
 
   const options = [
     { label: "Public", path: "/public" },
-    { label: "NagarPalika Officer", path: "/office" },
+    { label: "NagarPalika Officer", path: "/login" },
     { label: "State Govt.", path: "/state" },
   ];
 

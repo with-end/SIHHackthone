@@ -13,6 +13,7 @@ const nagarpalikaRoutes = require("./routes/department.js") ;
 const departmentRoutes = require("./routes/department.js") ; 
 
 
+
 app.use(express.json()) ;
 app.use(cors({
 

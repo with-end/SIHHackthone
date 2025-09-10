@@ -91,4 +91,57 @@ router.delete("/:id/department/:dept/remove/:officerId", async (req, res) => {
   }
 });
 
+
+// login for department officers 
+router.post("/auth/:nagarId", async (req, res) => {
+  try {
+    const { nagarId } = req.params;
+    const { email, password, department, role } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "email and password required" });
+    }
+
+    const nagar = await NagarPalika.findOne({ nagarId });
+    if (!nagar) return res.status(404).json({ error: "nagarPalika not found" });
+
+    // 🔹 Case 1: Main Officer
+    if (role === "main") {
+      const mainOfficer = await Officer.findById(nagar.mainOfficer);
+      if (mainOfficer && mainOfficer.email === email && mainOfficer.password === password) {
+        return res.json({ message: "login successful", success: true });
+      }
+      return res.status(401).json({ message: "invalid credentials", success: false });
+    }
+
+    if (!department || !role) {
+      return res.status(400).json({ message: "department and role required" });
+    }
+
+    // 🔹 Case 2: Department Head
+    if (role === "head") {
+      const deptHead = await Officer.findById(nagar[department].head);
+      if (deptHead && deptHead.email === email && deptHead.password === password) {
+        return res.json({ message: "login successful", success: true });
+      }
+      return res.status(401).json({ message: "invalid credentials", success: false });
+    }
+
+    // 🔹 Case 3: Department Officer
+    const officers = nagar[department].officers;
+    const officer = await Officer.findOne({ _id: { $in: officers }, email });
+
+    if (officer && officer.password === password) {
+      return res.json({ message: "login successful", success: true });
+    }
+
+    return res.status(401).json({ message: "invalid credentials", success: false });
+
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: "error while authentication", success: false });
+  }
+});
+
+
 module.exports = router;

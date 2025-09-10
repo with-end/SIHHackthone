@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/officer/login";
+const API_URL = "http://localhost:5000/api/auth/";
 
 export default function NagarPalikaLogin() {
   const [loginType, setLoginType] = useState(""); // "main" or "department"
@@ -10,6 +10,7 @@ export default function NagarPalikaLogin() {
   const [password, setPassword] = useState("");
   const [department, setDepartment] = useState("");
   const [category, setCategory] = useState("");
+  const nagarId = localStorage.getItem("nagarId") ;
 
   const navigate = useNavigate();
 
@@ -21,16 +22,13 @@ export default function NagarPalikaLogin() {
       const body =
         loginType === "main"
           ? { email: username, password, role: "main" }
-          : { email: username, password, department, category, role: "department" };
+          : { email: username, password, department, role: category };
 
-      const res = await axios.post(API_URL, body);
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/${nagarId}`, body);
 
-      // Save token if using JWT
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
-
-      if (loginType === "main") navigate("/main-office-dashboard");
-      else navigate("/department-dashboard");
+      if (loginType === "main") navigate("/office");
+      else if( category=="head" ) navigate(`/department/${department}`);
+      else navigate("/verify/") ;
     } catch (err) {
       console.error(err);
       alert("Login failed. Please check credentials.");
@@ -38,8 +36,8 @@ export default function NagarPalikaLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 p-4">
-      <div className="bg-white shadow-2xl rounded-3xl w-full max-w-md p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 p-1 lg:p-4 md:p-2">
+      <div className="bg-white shadow-2xl rounded-3xl w-full max-w-md p-4 lg:p-8 md:p-8">
         <h2 className="text-3xl font-extrabold text-gray-800 text-center mb-6">
           NagarPalika Login
         </h2>
@@ -79,9 +77,10 @@ export default function NagarPalikaLogin() {
                     required
                   >
                     <option value="">Select Department</option>
-                    <option value="Health">Health</option>
-                    <option value="Education">Education</option>
-                    <option value="PublicWorks">Public Works</option>
+                    <option value="sanitation">Sanitation</option>
+                    <option value="roads">Roads</option>
+                    <option value="electricity">Electricity</option>
+                    <option value="water">Water</option>
                   </select>
                 </div>
 
@@ -96,9 +95,8 @@ export default function NagarPalikaLogin() {
                     required
                   >
                     <option value="">Select Category</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Staff">Staff</option>
-                    <option value="Field">Field Officer</option>
+                    <option value="head">Head Officer</option>
+                    <option value="sub">Sub Officer</option>
                   </select>
                 </div>
               </>
