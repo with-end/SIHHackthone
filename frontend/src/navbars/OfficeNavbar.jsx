@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Home, FileText, Bell, LogOut, User } from "lucide-react";
 import { useTranslation } from "react-i18next"; 
 
-export default function Navbar({ isLoggedIn , mode , onLogout}) {
+export default function Navbar({isLoggedIn , mode , onLogout , variable }) {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
 
@@ -24,7 +24,7 @@ export default function Navbar({ isLoggedIn , mode , onLogout}) {
       <div className="flex items-center gap-2">
         <span className="text-2xl">🏛️</span>
         <h1 className="text-xl font-bold text-blue-800">
-          {mode === "office" ? "Nagarpalika Dashboard" : "Department Dashboard"}
+          {mode === "office" ? "Admin Dashboard" : "Department Dashboard"}
         </h1>
       </div>
 
@@ -55,7 +55,7 @@ export default function Navbar({ isLoggedIn , mode , onLogout}) {
             </Link>
             <li>
               <Link
-                to={`/${mode}`}
+                to={mode=="office" ? `/${mode}` : `/${mode}/${variable}` }
                 className="flex items-center gap-1 hover:text-blue-700"
               >
                 <Home size={18} /> Home
@@ -83,7 +83,7 @@ export default function Navbar({ isLoggedIn , mode , onLogout}) {
 
             <li>
               <Link
-                to={`/${mode}/map`}
+                to={mode=="office" ? `/${mode}/map` :  `/${mode}/${variable}/map`}
                 className="flex items-center gap-1 hover:text-blue-700"
               >
                 <FileText size={18} /> Map
@@ -91,7 +91,7 @@ export default function Navbar({ isLoggedIn , mode , onLogout}) {
             </li>
             <li>
               <Link
-                to={`/${mode}/notices`}
+                to={mode=="office" ? `/${mode}/notices` : `/${mode}/${variable}/notices`}
                 className="flex items-center gap-1 hover:text-blue-700"
               >
                 <Bell size={18} /> Notice
@@ -99,7 +99,7 @@ export default function Navbar({ isLoggedIn , mode , onLogout}) {
             </li>
             <li>
               <Link
-                to={`/${mode}/officers`}
+                to={mode=="office" ? `/${mode}/officers` : `/${mode}/${variable}/officers`}
                 className="flex items-center gap-1 hover:text-blue-700"
               >
                 <User size={18} /> Officer Info

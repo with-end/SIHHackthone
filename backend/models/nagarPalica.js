@@ -4,7 +4,14 @@ const DepartmentSchema = new mongoose.Schema({
   head: { type: mongoose.Schema.Types.ObjectId, ref: "Officer" },  // Department head
   officers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Officer" }], // other officers
   reports: [{ type: mongoose.Schema.Types.ObjectId, ref: "Report" }] ,   // reports
-  pendingReports : [{ type: mongoose.Schema.Types.ObjectId , ref: "Report" }]
+  pendingReports : [{ type: mongoose.Schema.Types.ObjectId , ref: "Report" }] ,
+  stats: {
+    pending: { type: Number, default: 0 },
+    inprogress: { type: Number, default: 0 },
+    completed: { type: Number, default: 0 },
+    approved: { type: Number, default: 0 },
+    rejected: { type: Number, default: 0 },
+  }
 });
 
 const NagarPalikaSchema = new mongoose.Schema({
@@ -14,6 +21,10 @@ const NagarPalikaSchema = new mongoose.Schema({
   boundary: { 
     type: [[Number]], // array of [lat, lng]
     required: true
+  },
+  office: {
+    type: { type: String, enum: ["Point"], default: "Point" },
+    coordinates: { type: [Number], required: true } // [lng, lat]
   },
   // Fixed 5 departments
   others: { type: DepartmentSchema, default: () => ({}) },

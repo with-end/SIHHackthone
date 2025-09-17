@@ -13,7 +13,7 @@ export default function PublicNavbar() {
     { name: "home", path: "/public" },
     { name: "reportIssue", path: "/public/report" },
     { name: "track", path: "/public/track" },
-    { name: "history", path: "/public/history" },
+    { name: "history1", path: "/public/history" },
     { name: "notices", path: "/public/notices" },
   ];
 

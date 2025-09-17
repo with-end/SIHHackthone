@@ -6,6 +6,7 @@ import "./index.css"; // keep your Tailwind styles
 import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
+import "./i18n"; 
 
 
 

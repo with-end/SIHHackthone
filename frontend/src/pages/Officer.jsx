@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Plus, Edit, Trash, Check } from "lucide-react";
+import { useParams } from "react-router-dom";
 
-export default function OfficerInfo() {
-  const [selectedDept, setSelectedDept] = useState("all");
+export default function OfficerInfo({mode}) {
+  let type = "all" ;
+
+  if( mode!=="office"){
+     const { deptId } = useParams() ;
+     type = deptId ;
+  }
+  const [selectedDept, setSelectedDept] = useState(type);
   const [officers, setOfficers] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newOfficer, setNewOfficer] = useState({

@@ -1,20 +1,25 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 
-export default function OfficerDashboard({ officerId }) {
+
+export default function OfficerDashboard() {
+  const location = useLocation();
+  const { officerId } = location.state || {};
   const [reports, setReports] = useState([]);
   const [status, setStatus] = useState("inactive");
   const [loading, setLoading] = useState(false);
   const [approveLoading, setApproveLoading] = useState(null);
 
   useEffect(() => {
+    console.log(officerId) ;
     fetchReports();
   }, []);
 
   async function fetchReports() {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/officer/${officerId}/reports`);
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/officer/${officerId}/reports`);
       setReports(res.data);
     } catch (err) {
       console.error(err);
@@ -24,13 +29,13 @@ export default function OfficerDashboard({ officerId }) {
 
   async function updateStatus(newStatus) {
     setStatus(newStatus);
-    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/officer/${officerId}/status`, { status: newStatus });
+    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/officer/${officerId}/status`, { status: newStatus });
     fetchReports();
   }
 
   async function approveReport(reportId) {
     setApproveLoading(reportId);
-    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/officer/${officerId}/reports/${reportId}/approve`);
+    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/officer/${officerId}/reports/${reportId}/approve`);
     setApproveLoading(null);
     fetchReports();
   }
@@ -38,25 +43,26 @@ export default function OfficerDashboard({ officerId }) {
   const pendingReports = reports.filter(r => r.status === "submitted").length;
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
+    <div className="p-4 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg p-6 shadow-lg flex flex-col sm:flex-row justify-between items-center mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold">Officer Dashboard</h1>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl p-6 shadow-lg flex flex-col sm:flex-row justify-between items-center mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Officer Dashboard</h1>
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row items-center gap-3">
-          <span className="font-semibold">Status: 
-            <span className={`ml-2 ${status === "active" ? "text-green-300" : "text-red-300"}`}>
+          <span className="font-semibold">
+            Status: 
+            <span className={`ml-2 font-bold ${status === "active" ? "text-green-300" : "text-red-300"}`}>
               {status.toUpperCase()}
             </span>
           </span>
           <button
             onClick={() => updateStatus("active")}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded shadow transition text-white font-medium"
+            className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-xl shadow text-white font-medium transition"
           >
             Set Active
           </button>
           <button
             onClick={() => updateStatus("inactive")}
-            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 rounded shadow transition text-white font-medium"
+            className="px-4 py-2 bg-gray-500 hover:bg-gray-600 rounded-xl shadow text-white font-medium transition"
           >
             Set Inactive
           </button>
@@ -64,8 +70,8 @@ export default function OfficerDashboard({ officerId }) {
       </div>
 
       {/* Pending Reports Badge */}
-      <div className="flex justify-end mb-4">
-        <span className="bg-yellow-400 text-yellow-900 font-bold px-4 py-2 rounded-full shadow">
+      <div className="flex justify-end mb-6">
+        <span className="bg-yellow-400 text-yellow-900 font-bold px-4 py-2 rounded-full shadow-lg">
           Pending Reports: {pendingReports}
         </span>
       </div>
@@ -76,21 +82,25 @@ export default function OfficerDashboard({ officerId }) {
       ) : (
         <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {reports.map((r) => (
-            <div key={r._id} className="bg-white shadow-lg rounded-lg p-5 flex flex-col justify-between hover:shadow-2xl transition duration-300">
+            <div 
+              key={r._id} 
+              className="bg-white shadow-lg rounded-xl p-5 flex flex-col justify-between transform hover:scale-105 transition duration-300"
+            >
               <div>
                 <h3 className="text-xl font-bold mb-2 text-gray-800">{r.title}</h3>
-                <p className="text-gray-700 mb-2">{r.description}</p>
-                <p className="font-semibold">
-                  Status: 
-                  <span className={`ml-2 ${r.status === "submitted" ? "text-yellow-500" : r.status === "processing" ? "text-blue-500" : "text-green-500"}`}>
-                    {r.status.toUpperCase()}
-                  </span>
-                </p>
+                <p className="text-gray-700 mb-3">{r.description}</p>
+                <span className={`inline-block px-2 py-1 text-sm rounded-full font-semibold ${
+                  r.status === "submitted" ? "bg-yellow-200 text-yellow-800" :
+                  r.status === "processing" ? "bg-blue-200 text-blue-800" :
+                  "bg-green-200 text-green-800"
+                }`}>
+                  {r.status.toUpperCase()}
+                </span>
               </div>
               <button
                 onClick={() => approveReport(r._id)}
                 disabled={approveLoading === r._id}
-                className={`mt-4 px-4 py-2 rounded text-white font-medium shadow transition ${
+                className={`mt-4 px-4 py-2 rounded-xl text-white font-medium shadow transition ${
                   approveLoading === r._id ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
                 }`}
               >

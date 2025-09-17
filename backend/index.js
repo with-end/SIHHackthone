@@ -9,21 +9,20 @@ dotenv.config() ; // we can also do like that => require("dotenv").config() ;
 const nagarPalikaRoutes = require("./routes/nagarPalika.js") ;
 const bodyParser = require("body-parser") ;
 const ReportRoutes = require("./routes/Report.js") ;
-const nagarpalikaRoutes = require("./routes/department.js") ;
 const departmentRoutes = require("./routes/department.js") ; 
+const officersRoutes = require("./routes/officer.js") ;
+
 
 
 
 app.use(express.json()) ;
-app.use(cors({
-
-    origin : FRONTEND_URL // origin which can support the server 
-}));
+app.use(cors());
 
 app.get("/" , (req , res) =>{ res.send("Backend is live now updated")}) ;
 app.use("/api/nagarpalika" , nagarPalikaRoutes) ;
 app.use("/api/reports" , ReportRoutes) ;
 app.use("/api" , departmentRoutes) ;
+app.use("/api/officer" , officersRoutes ) ;
 
 
 

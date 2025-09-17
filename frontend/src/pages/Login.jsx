@@ -25,10 +25,10 @@ export default function NagarPalikaLogin() {
           : { email: username, password, department, role: category };
 
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/auth/${nagarId}`, body);
-
+      
       if (loginType === "main") navigate("/office");
       else if( category=="head" ) navigate(`/department/${department}`);
-      else navigate("/verify/") ;
+      else navigate("/verify", { state: { officerId : res.data.officerId } });
     } catch (err) {
       console.error(err);
       alert("Login failed. Please check credentials.");
@@ -39,7 +39,7 @@ export default function NagarPalikaLogin() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 p-1 lg:p-4 md:p-2">
       <div className="bg-white shadow-2xl rounded-3xl w-full max-w-md p-4 lg:p-8 md:p-8">
         <h2 className="text-3xl font-extrabold text-gray-800 text-center mb-6">
-          NagarPalika Login
+          MunicipalCouncil Login
         </h2>
 
         {/* Login type selection */}

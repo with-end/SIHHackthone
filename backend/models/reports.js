@@ -17,13 +17,14 @@ const ReportSchema = new mongoose.Schema({
     coordinates: { type: [Number], required: true } // [lng, lat]
   },
 
-  status: { type: String, enum: ["processing", "submitted", "duplicate"], default: "processing" },
+  status: { type: String, enum: ["inprogress", "approved" , "completed", "pending" ], default: "pending" },
   reportId : { type: String, unique: true } , 
 
   priority: { type: Number, default: 0 },
 
   submissionDate: { type: Date, default: Date.now },
   approvalDate: { type: Date },
+  inprogressDate : { type : Date } ,
   completionDate: { type: Date }
 });
 

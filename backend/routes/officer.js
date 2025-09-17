@@ -1,19 +1,26 @@
 const express = require("express");
-const Officer = require("../models/officer");
-const Report = require("../models/Report");
-const NagarPalika = require("../models/NagarPalika");
+const Officer = require("../models/officer.js");
+const Report = require("../models/reports.js");
+const NagarPalika = require("../models/nagarPalica.js");
 
 const officerRouter = express.Router();
 
 // Get all assigned reports for officer
 officerRouter.get("/:officerId/reports", async (req, res) => {
   try {
-    const reports = await Report.find({ assignedOfficer: req.params.officerId });
+    // Find the officer first
+    const officer = await Officer.findById(req.params.officerId);
+    if (!officer) return res.status(404).json({ error: "Officer not found" });
+
+    // Only fetch reports that are currently assigned to this officer
+    const reports = await Report.find({ _id: { $in: officer.assignedReports } });
+
     res.json(reports);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch reports" });
   }
 });
+
 
 // Update officer status
 officerRouter.post("/:officerId/status", async (req, res) => {
@@ -23,14 +30,8 @@ officerRouter.post("/:officerId/status", async (req, res) => {
 
     if (status === "active") {
       // find pending reports from officer’s department
-      const nagar = await NagarPalika.findOne({ [`${officer.role}.officers`]: officer._id });
-      let deptKey = null;
-      for (let key of ["roads", "electricity", "sanitation", "water", "others"]) {
-        if (nagar[key].officers.some(o => o.toString() === officer._id.toString())) {
-          deptKey = key;
-          break;
-        }
-      }
+      const nagar = await NagarPalika.findOne({ nagarId : officer.nagarId }) ;
+      const deptKey = officer.department ; 
 
       if (deptKey) {
         const pendingReports = nagar[deptKey].pendingReports.splice(0, 3); // assign first 3
@@ -42,26 +43,66 @@ officerRouter.post("/:officerId/status", async (req, res) => {
         await officer.save();
       }
     }
-
+    
     res.json(officer);
   } catch (err) {
+    console.log(err) ;
     res.status(500).json({ error: "Status update failed" });
   }
 });
 
 // Approve a report
+
 officerRouter.post("/:officerId/reports/:reportId/approve", async (req, res) => {
   try {
+    const { officerId, reportId } = req.params;
+
+    // 1️⃣ Update the report
     const report = await Report.findByIdAndUpdate(
-      req.params.reportId,
-      { status: "processing", approvalDate: Date.now() },
+      reportId,
+      { status: "approved", approvalDate: Date.now() },
       { new: true }
     );
-    res.json(report);
+    const department = report.department ;
+    const updateOps = { $inc: {} };
+    updateOps.$inc[`${department}.stats.pending`] = -1;
+    updateOps.$inc[`${department}.stats.approved`] = 1;
+
+     await NagarPalika.findOneAndUpdate({ nagarId: report.nagarId }, updateOps);
+
+    if (!report) {
+      return res.status(404).json({ error: "Report not found" });
+    }
+
+    // 2️⃣ Remove report from officer's assignedReports
+    const officer = await Officer.findByIdAndUpdate(
+      officerId,
+      { $pull: { assignedReports: reportId } },
+      { new: true }
+    );
+
+    if (!officer) {
+      return res.status(404).json({ error: "Officer not found" });
+    }
+
+    // 3️⃣ If assignedReports is empty, set status to active
+   await Officer.findByIdAndUpdate(officerId, { $pull: { assignedReports: reportId } });
+
+// fetch updated officer to check assignedReports length
+const updatedOfficer = await Officer.findById(officerId);
+
+if (updatedOfficer.assignedReports.length === 0) {
+  updatedOfficer.status = "active";
+  await updatedOfficer.save();
+}
+
+res.json({ success: true, report, officer: updatedOfficer });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Approval failed" });
   }
 });
+
 
 
 // officer's Authentication 

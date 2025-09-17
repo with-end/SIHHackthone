@@ -1,7 +1,32 @@
 import React, { useState } from "react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Bell, LogOut, CheckCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
 import Chart from "../components/Chart";
+
+// ✅ Register everything once
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 export default function HomePage() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -40,8 +65,22 @@ export default function HomePage() {
   const lineData = {
     labels: ["Mar", "Apr", "May", "Jun", "Jul", "Aug"],
     datasets: [
-      { label: "Resolved", data: [50, 65, 80, 95, 110, 130], borderColor: "rgba(34,197,94,1)", backgroundColor: "rgba(34,197,94,0.2)", tension: 0.4, fill: true },
-      { label: "New Issues", data: [70, 85, 90, 100, 120, 150], borderColor: "rgba(59,130,246,1)", backgroundColor: "rgba(59,130,246,0.2)", tension: 0.4, fill: true },
+      {
+        label: "Resolved",
+        data: [50, 65, 80, 95, 110, 130],
+        borderColor: "rgba(34,197,94,1)",
+        backgroundColor: "rgba(34,197,94,0.2)",
+        tension: 0.4,
+        fill: true,
+      },
+      {
+        label: "New Issues",
+        data: [70, 85, 90, 100, 120, 150],
+        borderColor: "rgba(59,130,246,1)",
+        backgroundColor: "rgba(59,130,246,0.2)",
+        tension: 0.4,
+        fill: true,
+      },
     ],
   };
 
@@ -50,7 +89,12 @@ export default function HomePage() {
     maintainAspectRatio: false,
     plugins: {
       legend: { position: "top" },
-      title: { display: true, text: "Overall Issues Trend (Last 6 Months)", font: { size: 16, weight: "bold" }, color: "#1e3a8a" },
+      title: {
+        display: true,
+        text: "Overall Issues Trend (Last 6 Months)",
+        font: { size: 16, weight: "bold" },
+        color: "#1e3a8a",
+      },
     },
     scales: {
       x: { grid: { display: false } },
@@ -68,7 +112,10 @@ export default function HomePage() {
           { title: "Resolved", count: 58, color: "bg-green-500", icon: <CheckCircle className="w-6 h-6" /> },
           { title: "Rejected", count: 5, color: "bg-red-500", icon: <XCircle className="w-6 h-6" /> },
         ].map((card, i) => (
-          <div key={i} className={`${card.color} text-white rounded-xl p-6 shadow-lg flex items-center gap-4 hover:scale-105 transition-transform`}>
+          <div
+            key={i}
+            className={`${card.color} text-white rounded-xl p-6 shadow-lg flex items-center gap-4 hover:scale-105 transition-transform`}
+          >
             <div>{card.icon}</div>
             <div>
               <h3 className="text-lg font-semibold">{card.title}</h3>
@@ -93,10 +140,18 @@ export default function HomePage() {
             <table className="w-full text-sm min-w-[550px] border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr className="border-b">
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("title")}>Title</th>
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("dept")}>Dept</th>
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("status")}>Status</th>
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("date")}>Date</th>
+                  <th className="p-2 cursor-pointer" onClick={() => requestSort("title")}>
+                    Title
+                  </th>
+                  <th className="p-2 cursor-pointer" onClick={() => requestSort("dept")}>
+                    Dept
+                  </th>
+                  <th className="p-2 cursor-pointer" onClick={() => requestSort("status")}>
+                    Status
+                  </th>
+                  <th className="p-2 cursor-pointer" onClick={() => requestSort("date")}>
+                    Date
+                  </th>
                   <th className="p-2">Action</th>
                 </tr>
               </thead>
@@ -106,11 +161,15 @@ export default function HomePage() {
                     <td className="p-2">{issue.title}</td>
                     <td className="p-2">{issue.dept}</td>
                     <td className="p-2">
-                      <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
-                        issue.status === "Resolved" ? "bg-green-100 text-green-700" :
-                        issue.status === "Pending" ? "bg-yellow-100 text-yellow-700" :
-                        "bg-blue-100 text-blue-700"
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full font-semibold ${
+                          issue.status === "Resolved"
+                            ? "bg-green-100 text-green-700"
+                            : issue.status === "Pending"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-blue-100 text-blue-700"
+                        }`}
+                      >
                         {issue.status}
                       </span>
                     </td>

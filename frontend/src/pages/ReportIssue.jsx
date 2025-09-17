@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { useTranslation } from "react-i18next";
 import axios from "axios";
-
 
 function LocationPicker({ location, setLocation }) {
   useMapEvents({
@@ -14,14 +14,18 @@ function LocationPicker({ location, setLocation }) {
 }
 
 export default function SubmitReport() {
+  const { t } = useTranslation();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [location, setLocation] = useState(null);
-  const [mapCenter, setMapCenter] = useState([23.2599, 77.4126]);
+  const pos = JSON.parse(localStorage.getItem("center"));
+  const [mapCenter, setMapCenter] = useState([pos[1], pos[0]]);
   const [loading, setLoading] = useState(false);
-  const nagarId = localStorage.getItem("nagarId") ;
+  const nagarId = localStorage.getItem("nagarId");
+  const [email, setEmail] = useState(null);
 
   const mapRef = useRef(null);
   const navigate = useNavigate();
@@ -30,7 +34,7 @@ export default function SubmitReport() {
   // Voice-to-text
   const handleSpeak = () => {
     if (!("webkitSpeechRecognition" in window)) {
-      alert("Speech recognition not supported in this browser.");
+      alert(t("speechNotSupported"));
       return;
     }
     const recognition = new window.webkitSpeechRecognition();
@@ -60,7 +64,7 @@ export default function SubmitReport() {
   // Capture image from camera
   const handleCapture = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Camera not supported");
+      alert(t("cameraNotSupported"));
       return;
     }
 
@@ -76,7 +80,9 @@ export default function SubmitReport() {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
+      const blob = await new Promise((res) =>
+        canvas.toBlob(res, "image/jpeg")
+      );
       const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
 
       setImageFile(file);
@@ -85,7 +91,7 @@ export default function SubmitReport() {
       stream.getTracks().forEach((track) => track.stop());
     } catch (err) {
       console.error("Camera error:", err);
-      alert("Failed to capture image");
+      alert(t("cameraError"));
     }
   };
 
@@ -110,30 +116,37 @@ export default function SubmitReport() {
   // Submit report
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!location) return alert("Please select a location on the map.");
+    if (!location) return alert(t("selectLocation"));
 
     setLoading(true);
 
     try {
       const formData = new FormData();
-      formData.append("reporterEmail", "user@example.com");
+      formData.append("reporterEmail", email);
       formData.append("title", title);
       formData.append("description", description);
       formData.append(
         "location",
-        JSON.stringify({ type: "Point", coordinates: [location[1], location[0]] })
+        JSON.stringify({
+          type: "Point",
+          coordinates: [location[1], location[0]],
+        })
       );
       if (imageFile) formData.append("image", imageFile);
 
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
-      alert("Report submitted successfully.");
+      alert(t("reportSubmitted"));
       navigate("/public");
     } catch (err) {
       console.error(err);
-      alert("Failed to submit report.");
+      alert(t("reportFailed"));
     } finally {
       setLoading(false);
     }
@@ -144,19 +157,27 @@ export default function SubmitReport() {
       {/* Form first on mobile */}
       <div className="w-full md:w-1/3 flex flex-col gap-4 order-1 md:order-none">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-500 bg-clip-text text-transparent">
-          Submit Report
+          {t("submitReport")}
         </h2>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Title"
+            placeholder={t("title")}
             className="p-2 border rounded-lg"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
+          <input
+            type="text"
+            placeholder={t("emailId")}
+            className="p-2 border rounded-lg"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
           <textarea
-            placeholder="Description"
+            placeholder={t("description")}
             className="p-2 border rounded-lg"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -169,21 +190,21 @@ export default function SubmitReport() {
               onClick={handleSpeak}
               className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 text-sm"
             >
-              🎤 Speak
+              🎤 {t("speak")}
             </button>
             <button
               type="button"
               onClick={handleCapture}
               className="flex-1 bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 text-sm"
             >
-              📸 Capture
+              📸 {t("capture")}
             </button>
             <button
               type="button"
               onClick={() => fileInputRef.current.click()}
               className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 text-sm"
             >
-              📁 Upload
+              📁 {t("upload")}
             </button>
             <input
               type="file"
@@ -207,19 +228,17 @@ export default function SubmitReport() {
             disabled={loading}
             className="bg-green-500 text-white py-2 rounded-xl hover:bg-green-600 font-semibold"
           >
-            {loading ? "Submitting..." : "Submit Report"}
+            {loading ? t("submitting") : t("submitReport")}
           </button>
         </form>
-        <p className="text-gray-500 text-sm mt-2">
-          Click on the map to select the report location.
-        </p>
+        <p className="text-gray-500 text-sm mt-2">{t("clickOnMap")}</p>
       </div>
 
       {/* Map */}
       <div className="w-full md:w-2/3 h-[60vh] md:h-[80vh] rounded-xl overflow-hidden shadow-lg">
         <MapContainer
           center={mapCenter}
-          zoom={16}
+          zoom={7}
           className="w-full h-full z-0"
           whenCreated={(mapInstance) => {
             mapRef.current = mapInstance;

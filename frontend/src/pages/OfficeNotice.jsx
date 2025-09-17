@@ -76,7 +76,7 @@ export default function Notices() {
           </thead>
           <tbody>
             {sortedNotices.map((notice) => (
-              <tr key={notice.id} className="border-b hover:bg-gray-50 transition">
+              <tr key={notice.id} className="border-b hover:bg-gray-50 transition text-left">
                 <td className="p-3 text-gray-800 font-medium">{notice.date}</td>
                 <td className="p-3 text-gray-700">{notice.description}</td>
                 <td className="p-3 flex gap-2">

@@ -29,7 +29,8 @@ export default function UserSelection() {
 
                 if (res.data ) {
                   // ✅ Save nagarId for future
-                  localStorage.setItem("nagarId", res.data);
+                  localStorage.setItem("nagarId", res.data.nagarId);
+                  localStorage.setItem("center" , JSON.stringify(res.data.center)) ; // arry of location like [10,10]
                 }
               } catch (err) {
                 console.error("API error:", err);
@@ -59,7 +60,7 @@ export default function UserSelection() {
 
   const options = [
     { label: "Public", path: "/public" },
-    { label: "NagarPalika Officer", path: "/login" },
+    { label: "Municiple Council", path: "/login" },
     { label: "State Govt.", path: "/state" },
   ];
 

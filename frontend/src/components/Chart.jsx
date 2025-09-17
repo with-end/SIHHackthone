@@ -1,67 +1,50 @@
-// Chart.jsx
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler, // for area under curve
-} from "chart.js";
-
 import { Bar } from "react-chartjs-2";
 
-// Register required components once
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+export default function Chart({ deptSummary, statusCounts, type }) {
+  let data;
 
-export default function Chart() {
-  const data = {
-    labels: ["Electricity", "Roads", "Water", "Sanitation"],
-    datasets: [
-      {
-        label: "Resolved Issues",
-        data: [45, 32, 50, 40],
-        backgroundColor: "rgba(34,197,94,0.7)", // green
-        borderRadius: 10,
-      },
-      {
-        label: "Pending Issues",
-        data: [12, 18, 15, 20],
-        backgroundColor: "rgba(239,68,68,0.7)", // red
-        borderRadius: 10,
-      },
-    ],
-  };
+  if (type === "department") {
+    // office view
+    data = {
+      labels: Object.keys(deptSummary),
+      datasets: [
+        {
+          label: "Resolved",
+          data: Object.values(deptSummary).map(d => d.resolved),
+          backgroundColor: "rgba(34,197,94,0.7)",
+        },
+        {
+          label: "Pending",
+          data: Object.values(deptSummary).map(d => d.pending),
+          backgroundColor: "rgba(239,68,68,0.7)",
+        },
+      ],
+    };
+  } else {
+    // department view
+    data = {
+      labels: ["Pending", "In Progress", "Completed", "Approved", "Rejected"],
+      datasets: [
+        {
+          label: "Reports",
+          data: [
+            statusCounts.pending || 0,
+            statusCounts["inprogress"] || 0,
+            statusCounts.completed || 0,
+            statusCounts.approved || 0,
+            statusCounts.rejected || 0,
+          ],
+          backgroundColor: [
+            "rgba(255, 206, 86, 0.7)", // yellow
+            "rgba(54, 162, 235, 0.7)",   // blue
+            "rgba(75, 192, 192, 0.7)",
+            "rgba(34,197,94,0.7)",  // green
+            "rgba(239,68,68,0.7)",
+          ],
+        },
+      ],
+    };
+  }
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { position: "top" },
-      title: {
-        display: true,
-        text: "Department Performance",
-        font: { size: 16, weight: "bold" },
-        color: "#1e3a8a",
-      },
-    },
-    scales: {
-      x: { grid: { display: false } },
-      y: { grid: { color: "rgba(0,0,0,0.05)" } },
-    },
-    barPercentage: 0.6, // makes bars slightly thinner
-    categoryPercentage: 0.7,
-  };
-
-  return <Bar data={data} options={options} height={150} />;
+  return <Bar data={data} />;
 }

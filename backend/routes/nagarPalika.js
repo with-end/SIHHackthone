@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const NagarPalika = require("../models/nagarPalica");
 const Officer = require("../models/officer");
+const Report = require("../models/reports.js") ;
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.get("/", async (req, res) => {
 // ----------------------
 router.post("/", async (req, res) => {
   try {
-    const { name, boundary, mainOfficer } = req.body;
+    const { name, boundary, mainOfficer , office} = req.body;
 
     // 1. Create main officer
     const main = new Officer({
@@ -43,6 +44,7 @@ router.post("/", async (req, res) => {
       boundary,
       mainOfficer: main._id,
       nagarId : `NP-${nId.toString()}` ,
+      office 
 
     });
 
@@ -141,7 +143,7 @@ function isPointInPolygon(point, polygon) {
 // ✅ GET /api/nagarpalika/find?lat=..&lng=..--- for giving the nagar palikaId based on the location of the user 
 router.get("/find", async (req, res) => {
   try {
-    console.log("hellow") ;
+    
     const { lat, lng } = req.query;
     if (!lat || !lng) {
       return res.status(400).json({ error: "lat and lng required" });
@@ -152,7 +154,7 @@ router.get("/find", async (req, res) => {
 
     for (const nagar of nagars) {
       if (isPointInPolygon(point, nagar.boundary)) {
-        return res.json(nagar.nagarId); // ✅ return the nagarpalika where point lies
+        return res.json({nagarId : nagar.nagarId , center : nagar.office.coordinates}); // ✅ return the nagarpalika where point lies
       }
     }
 
@@ -161,6 +163,157 @@ router.get("/find", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+router.get("/:nagarId/boundary", async (req, res) => {
+  try {
+    const nagar = await NagarPalika.findOne({ nagarId: req.params.nagarId });
+    if (!nagar) return res.status(404).json({ error: "NagarPalika not found" });
+
+    res.json({ boundary: nagar.boundary , location : nagar.office});
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch boundary" });
+  }
+});
+
+// ✅ Get Reports for NagarPalika
+router.get("/:nagarId/reports/:type", async (req, res) => {
+  try {
+    const { nagarId, type } = req.params;
+
+    let query = { nagarId };
+
+    if (type !== "office") {
+      // filter by department if not "office"
+      query.department = type;
+    }
+
+    const reports = await Report.find(query);
+    res.json(reports);
+
+    console.log("Reports fetched:", reports.length, "Type:", type);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch reports" });
+  }
+});
+
+
+
+// for home page information 
+router.get("/home/:variable", async (req, res) => {
+  try {
+    const { variable } = req.params; // "office" OR specific dept like "roads"
+    const { nagarId } = req.query;
+
+    if (!nagarId) {
+      return res.status(400).json({ message: "nagarId is required" });
+    }
+
+    let reports = [];
+    let statusCounts = {};
+    let deptSummary = {};
+    let trendData = {};
+
+    // ✅ Fetch the NagarPalika
+    const nagar = await NagarPalika.findOne({nagarId})
+  .populate("roads.reports")
+  .populate("electricity.reports")
+  .populate("sanitation.reports")
+  .populate("water.reports")
+  .populate("others.reports");
+    if (!nagar) return res.status(404).json({ message: "NagarPalika not found" });
+
+    // ---- CASE 1: OFFICE (all depts combined) ----
+    if (variable === "office") {
+      // Collect all reports from all departments
+      const allDepts = ["roads", "electricity", "sanitation", "water", "others"];
+
+      for (const deptName of allDepts) {
+        const dept = nagar[deptName];
+        if (!dept) continue;
+
+        // Gather reports
+        reports = reports.concat(dept.reports || []);
+
+        // Department summary (for left chart)
+        deptSummary[deptName] = {
+          name: deptName,
+          pending:
+            (dept.stats?.pending || 0) +
+            (dept.stats?.inprogress || 0) +
+            (dept.stats?.approved || 0),
+          resolved : dept.stats?.completed ,
+        };
+
+        // Add to overall status counts
+        statusCounts.pending = (statusCounts.pending || 0) + (dept.stats?.pending || 0);
+        statusCounts["inprogress"] = (statusCounts["inprogress"] || 0) + (dept.stats?.inprogress || 0);
+        statusCounts.completed = (statusCounts.completed || 0) + (dept.stats?.completed || 0);
+        statusCounts.approved = (statusCounts.approved || 0) + (dept.stats?.approved || 0);
+        statusCounts.rejected = (statusCounts.rejected || 0) + (dept.stats?.rejected || 0);
+      }
+    } 
+    
+    // ---- CASE 2: SPECIFIC DEPARTMENT ----
+    else {
+      const dept = nagar[variable];
+      if (!dept) return res.status(404).json({ message: "Department not found" });
+
+      reports = dept.reports || [];
+      statusCounts = {
+        pending: dept.stats?.pending || 0,
+        "inprogress": dept.stats?.inprogress || 0,
+        completed: dept.stats?.completed || 0,
+        approved: dept.stats?.approved || 0,
+        rejected: dept.stats?.rejected || 0,
+      };
+    }
+
+    // ---- TREND DATA: Last 6 months ----
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); // include current month
+
+    const trendQuery =
+      variable === "office"
+        ? { nagarId, submissionDate: { $gte: sixMonthsAgo } }
+        : { nagarId, department: variable, submissionDate: { $gte: sixMonthsAgo } };
+
+    const trend = await Report.aggregate([
+      { $match: trendQuery },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$submissionDate" },
+            month: { $month: "$submissionDate" },
+          },
+          newIssues: { $sum: 1 },
+          resolved: {
+            $sum: {
+              $cond: [{ $in: ["$status", ["completed", "approved"]] }, 1, 0],
+            },
+          },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    // Format trend for frontend
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    trendData = trend.reduce((acc, t) => {
+      const label = `${monthNames[t._id.month - 1]} ${t._id.year}`;
+      acc[label] = { new: t.newIssues, completed: t.resolved };
+      return acc;
+    }, {});
+
+    res.json({ reports, statusCounts, deptSummary, trendData });
+  } catch (err) {
+    console.error("Error in /home/:variable:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 
 module.exports = router;

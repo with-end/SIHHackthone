@@ -46,7 +46,7 @@ router.post("/:id/department/:dept/add", async (req, res) => {
     if (!nagar[dept]) return res.status(400).json({ error: "Invalid department" });
 
     // Create new officer
-    const newOfficer = new Officer({ name, email, password, role });
+    const newOfficer = new Officer({ name, email, password, role , nagarId : id , department : dept });
     await newOfficer.save();
 
     // Assign to dept
@@ -122,7 +122,7 @@ router.post("/auth/:nagarId", async (req, res) => {
     if (role === "head") {
       const deptHead = await Officer.findById(nagar[department].head);
       if (deptHead && deptHead.email === email && deptHead.password === password) {
-        return res.json({ message: "login successful", success: true });
+        return res.json({ message: "login successful" , success: true });
       }
       return res.status(401).json({ message: "invalid credentials", success: false });
     }
@@ -132,7 +132,7 @@ router.post("/auth/:nagarId", async (req, res) => {
     const officer = await Officer.findOne({ _id: { $in: officers }, email });
 
     if (officer && officer.password === password) {
-      return res.json({ message: "login successful", success: true });
+      return res.json({ message: "login successful" ,officerId : officer._id , success: true });
     }
 
     return res.status(401).json({ message: "invalid credentials", success: false });

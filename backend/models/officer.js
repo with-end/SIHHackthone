@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const OfficerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    nagarId : { type : String } ,
+    department : { type : String } ,
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }, // hashed password ideally
     role: { type: String, enum: ["main", "sub"], default: "sub" },
