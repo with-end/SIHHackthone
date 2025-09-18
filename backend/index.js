@@ -11,6 +11,7 @@ const bodyParser = require("body-parser") ;
 const ReportRoutes = require("./routes/Report.js") ;
 const departmentRoutes = require("./routes/department.js") ; 
 const officersRoutes = require("./routes/officer.js") ;
+const translationRoutes = require("./routes/translation.js") ;
 
 
 
@@ -23,6 +24,8 @@ app.use("/api/nagarpalika" , nagarPalikaRoutes) ;
 app.use("/api/reports" , ReportRoutes) ;
 app.use("/api" , departmentRoutes) ;
 app.use("/api/officer" , officersRoutes ) ;
+app.use("/api" , translationRoutes ) ;
+app.use(bodyParser.json()) ;
 
 
 

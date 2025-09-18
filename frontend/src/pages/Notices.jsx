@@ -34,7 +34,7 @@ export default function Notices() {
         Latest Notices
       </h2>
 
-      <div className="flex flex-col gap-6 max-h-[80vh] overflow-y-auto">
+      <div className="flex flex-col gap-6 min-h-[80vh] overflow-y-auto">
         {notices.map((notice) => (
           <div
             key={notice.id}

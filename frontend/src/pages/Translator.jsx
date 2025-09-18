@@ -1,31 +1,34 @@
 import { useState } from "react";
+import axios from "axios";
 
-async function translateText(text, targetLang) {
-  const response = await fetch("http://localhost:5000/translate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, targetLang }),
-  });
-  const data = await response.json();
-  return data.translatedText;
-}
+export default function BatchTranslate() {
+  const [texts, setTexts] = useState(["i will not be able to come yar", "i will be able to come yar", "i will definitely come yar"]);
+  const [language, setLanguage] = useState("hi-IN");
+  const [results, setResults] = useState([]);
 
-export default function Report({ reportText }) {
-  const [translated, setTranslated] = useState("");
-
-  const handleTranslate = async (lang) => {
-    const result = await translateText(reportText, lang);
-    setTranslated(result);
+  const handleTranslate = async () => {
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/translate`, {
+        texts,
+        targetLanguage: language
+      });
+      console.log(response) ;
+      setResults(response.data.translatedTexts);
+    } catch (err) {
+      console.error(err);
+      setResults(["Translation failed"]);
+    }
   };
 
   return (
     <div>
-      <p><b>Original:</b> {reportText}</p>
-      <button onClick={() => handleTranslate("hi")}>Hindi</button>
-      <button onClick={() => handleTranslate("ta")}>Tamil</button>
-      <button onClick={() => handleTranslate("bn")}>Bengali</button>
-      <p><b>Translated:</b> {translated}</p>
+      <h2>Batch Translator</h2>
+      <button onClick={handleTranslate}>Translate All Reports</button>
+      <ul>
+        {results.map((text, idx) => (
+          <li key={idx}>{text}</li>
+        ))}
+      </ul>
     </div>
   );
 }
-

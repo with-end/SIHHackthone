@@ -1,30 +1,38 @@
-const express = require("express") ;
-const router = express.Router() ;
-const axios = require("axios") ;
+const express = require("express");
+const router = express.Router();
+const { SarvamAIClient } = require("sarvamai");
 
+// Initialize Sarvam client
+const client = new SarvamAIClient({
+  apiSubscriptionKey: process.env.SERVAM_API_KEY
+});
+
+// Batch translation endpoint
 router.post("/translate", async (req, res) => {
-  const { text, target } = req.body;
-  if (!text || !target) return res.status(400).json({ error: "Missing text or target" });
+  const { texts, targetLanguage } = req.body;
+
+  if (!Array.isArray(texts) || texts.length === 0) {
+    return res.status(400).json({ error: "texts must be a non-empty array" });
+  }
 
   try {
-    const response = await axios.post(
-      "https://libretranslate.com/translate",
-      {
-        q: text,
-        source: "en",
-        target: target,
-        format: "text",
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
+    // Run all translations in parallel
+    const translations = await Promise.all(
+      texts.map(async (txt) => {
+        const response = await client.text.translate({
+          input: txt,
+          source_language_code: "auto",
+          target_language_code: targetLanguage
+        });
+        return response.translated_text;
+      })
     );
-    
-    res.json({ translatedText: response.data.translatedText });
-  } catch (err) {
-    console.log(err) ;
-    res.status(500).json({ error: "Translation failed" });
+
+    res.json({ translatedTexts: translations });
+  } catch (error) {
+    console.error(error.response?.data || error.message || error);
+    res.status(500).json({ error: "Batch translation failed" });
   }
 });
 
-module.exports = router ;
+module.exports = router;

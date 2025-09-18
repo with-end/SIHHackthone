@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 
@@ -6,15 +6,14 @@ export default function TrackIssue() {
   const [searchId, setSearchId] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // ✅ Store translated title & description
+  const [translatedTitle, setTranslatedTitle] = useState("");
+  const [translatedDescription, setTranslatedDescription] = useState("");
 
   // List of stages
-  const stages = [
-    t("submitted"),
-    t("approved"),
-    t("inProgress"),
-    t("completed")
-  ];
+  const stages = [t("submitted"), t("approved"), t("inProgress"), t("completed")];
 
   const handleSearch = async () => {
     if (!searchId.trim()) return;
@@ -26,6 +25,11 @@ export default function TrackIssue() {
       );
 
       setResult(res.data || { notFound: true });
+
+      if (res.data && !res.data.notFound) {
+        setTranslatedTitle(res.data.title); // default English
+        setTranslatedDescription(res.data.description); // default English
+      }
     } catch (err) {
       console.error(err);
       setResult({ notFound: true });
@@ -33,6 +37,43 @@ export default function TrackIssue() {
       setLoading(false);
     }
   };
+
+  // ✅ Translate when language changes
+  useEffect(() => {
+    if (!result || result.notFound) return;
+
+    const fetchTranslations = async () => {
+      const langCode =  `${i18n.language}-IN`;
+
+      try {
+        // Translate title
+        const resTitle = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/translate`,
+          {
+            texts: [result.title],
+            targetLanguage: langCode,
+          }
+        );
+        setTranslatedTitle(resTitle.data.translatedTexts[0]);
+
+        // Translate description
+        const resDesc = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/translate`,
+          {
+            texts: [result.description],
+            targetLanguage: langCode,
+          }
+        );
+        setTranslatedDescription(resDesc.data.translatedTexts[0]);
+      } catch (err) {
+        console.error("Translation failed:", err);
+        setTranslatedTitle(result.title);
+        setTranslatedDescription(result.description);
+      }
+    };
+
+    fetchTranslations();
+  }, [i18n.language, result]);
 
   // Get date for a stage
   const getDate = (stage) => {
@@ -101,7 +142,7 @@ export default function TrackIssue() {
               {/* Issue Details */}
               <div className="mb-10">
                 <h3 className="text-xl md:text-2xl font-bold text-indigo-700">
-                  {result.title}
+                  {translatedTitle || result.title}
                 </h3>
                 <p className="text-gray-700 mt-2 text-sm md:text-base">
                   <span className="font-semibold">{t("id")}:</span> {result.reportId}
@@ -116,7 +157,7 @@ export default function TrackIssue() {
                 </p>
                 <p className="text-gray-700 mt-2 text-sm md:text-base">
                   <span className="font-semibold">{t("description")}:</span>{" "}
-                  {result.description}
+                  {translatedDescription || result.description}
                 </p>
               </div>
 
@@ -128,7 +169,8 @@ export default function TrackIssue() {
                   className="absolute top-5 left-0 h-1 bg-indigo-500 z-0 rounded-full"
                   style={{
                     width: `${
-                      ((stages.filter(isActive).length - 1) / (stages.length - 1)) *
+                      ((stages.filter(isActive).length - 1) /
+                        (stages.length - 1)) *
                       100
                     }%`,
                     transition: "width 0.5s",

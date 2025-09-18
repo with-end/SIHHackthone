@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 
 export default function PublicHome() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nagarId = localStorage.getItem("nagarId");
 
   const [issues, setIssues] = useState([]);
+  const [translatedTitles, setTranslatedTitles] = useState([]);
+  const [translatedDescriptions, setTranslatedDescriptions] = useState([]);
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
 
@@ -18,9 +20,55 @@ export default function PublicHome() {
     if (!nagarId) return;
     axios
       .get(`${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`)
-      .then((res) => setIssues(res.data))
+      .then((res) => {
+        setIssues(res.data);
+        setTranslatedTitles(res.data.map((issue) => issue.title)); // default English
+        setTranslatedDescriptions(res.data.map((issue) => issue.description)); // default English
+      })
       .catch((err) => console.error("Error fetching reports:", err));
   }, [nagarId]);
+
+  // ✅ Translate titles & descriptions whenever language changes
+  useEffect(() => {
+    if (issues.length === 0) return;
+
+    const fetchTranslations = async () => {
+      const titles = issues.map((issue) => issue.title);
+      const descriptions = issues.map((issue) => issue.description);
+
+      // 👇 English stays "en", others use -IN
+      const langCode = `${i18n.language}-IN`;
+
+      try {
+        // Translate titles
+        const resTitles = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/translate`,
+          {
+            texts: titles,
+            targetLanguage: langCode,
+          }
+        );
+        setTranslatedTitles(resTitles.data.translatedTexts);
+
+        // Translate descriptions
+        const resDescriptions = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/translate`,
+          {
+            texts: descriptions,
+            targetLanguage: langCode,
+          }
+        );
+        setTranslatedDescriptions(resDescriptions.data.translatedTexts);
+
+      } catch (err) {
+        console.error("Translation failed:", err);
+        setTranslatedTitles(titles); // fallback
+        setTranslatedDescriptions(descriptions); // fallback
+      }
+    };
+
+    fetchTranslations();
+  }, [i18n.language, issues]);
 
   const filteredIssues = issues.filter(
     (issue) =>
@@ -65,7 +113,7 @@ export default function PublicHome() {
       {/* Issues List */}
       <div className="flex flex-col gap-4 sm:gap-6 md:gap-8">
         {filteredIssues.length > 0 ? (
-          filteredIssues.map((issue) => (
+          filteredIssues.map((issue, idx) => (
             <div
               key={issue._id}
               className="relative w-full bg-white/70 backdrop-blur-lg rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 shadow-md hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
@@ -88,7 +136,7 @@ export default function PublicHome() {
                 {/* Text Info */}
                 <div className="flex-1 space-y-2 w-full">
                   <h3 className="text-base sm:text-lg md:text-xl font-bold text-indigo-700 line-clamp-1">
-                    {issue.title}
+                    {translatedTitles[idx] || issue.title}
                   </h3>
                   <p className="text-xs sm:text-sm md:text-base text-gray-600">
                     <span className="font-semibold">{t("id")}:</span> {issue.reportId}
@@ -101,8 +149,8 @@ export default function PublicHome() {
                     {new Date(issue.submissionDate).toLocaleDateString()}
                   </p>
                   <p className="text-xs sm:text-sm md:text-base text-gray-600 truncate">
-                    <span className="font-semibold">{t("submittedBy")}:</span>{" "}
-                    {issue.reporterEmail}
+                    <span className="font-semibold">{t("description")}:</span>{" "}
+                    {translatedDescriptions[idx] || issue.description}
                   </p>
                 </div>
 

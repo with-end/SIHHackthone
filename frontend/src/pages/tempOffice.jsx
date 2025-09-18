@@ -194,18 +194,34 @@ export default function HomePage({ mode }) {
 
         {/* Issues Table */}
         <div className="lg:col-span-3 bg-white rounded-xl shadow-md p-4 sm:p-6 flex flex-col">
+           <th
+  className="pb-2 cursor-pointer select-none flex items-center gap-1 text-amber-700 hover:text-blue-500 transition-colors duration-200"
+  onClick={() => requestSort("priority")}
+>
+  Priority
+  {/* Show arrow based on current sort */}
+  {sortConfig.key === "priority" && (
+    <span className="text-sm">
+      {sortConfig.direction === "asc" ? "▲" : "▼"}
+    </span>
+  )}
+</th>
           <h2 className="text-lg font-bold mb-4 text-blue-900">Current Issues</h2>
           <div className="overflow-y-auto h-[300px]">
+           
+
             <table className="w-full text-sm min-w-[550px] border-collapse">
-              <thead className="bg-gray-50 sticky top-0 z-10">
-                <tr className="border-b">
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("title")}>Title</th>
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("department")}>Dept</th>
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("status")}>Status</th>
-                  <th className="p-2 cursor-pointer" onClick={() => requestSort("submissionDate")}>Date</th>
-                  <th className="p-2">Action</th>
-                </tr>
-              </thead>
+             
+<thead className="bg-gray-50 sticky top-0 z-10">
+  <tr className="border-b">
+    <th className="p-2 cursor-pointer" onClick={() => requestSort("title")}>Title</th>
+    <th className="p-2 cursor-pointer" onClick={() => requestSort("department")}>Dept</th>
+    <th className="p-2 cursor-pointer" onClick={() => requestSort("status")}>Status</th>
+    <th className="p-2 cursor-pointer" onClick={() => requestSort("submissionDate")}>Date</th>
+    <th className="p-2">Action</th>
+  </tr>
+</thead>
+
               <tbody>
                 {sortedIssues.map((issue) => (
                   <tr key={issue._id} className="border-b hover:bg-gray-50 transition">

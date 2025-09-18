@@ -4,10 +4,12 @@ import { useTranslation } from "react-i18next";
 
 export default function History() {
   const [issues, setIssues] = useState([]);
+  const [translatedTitles, setTranslatedTitles] = useState([]);
+  const [translatedDescriptions, setTranslatedDescriptions] = useState([]);
   const [searchId, setSearchId] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [loading, setLoading] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Fetch completed issues from backend
   useEffect(() => {
@@ -33,6 +35,8 @@ export default function History() {
           imageUrl: r.imageUrl || null,
         }));
         setIssues(mapped);
+        setTranslatedTitles(mapped.map((i) => i.title)); // default English
+        setTranslatedDescriptions(mapped.map((i) => i.description)); // default English
       } catch (err) {
         console.error("Error fetching completed reports:", err);
       } finally {
@@ -43,12 +47,43 @@ export default function History() {
     fetchCompletedIssues();
   }, [t]);
 
+  // Translate titles & descriptions on language change
+  useEffect(() => {
+    if (issues.length === 0) return;
+
+    const translateTexts = async () => {
+      const langCode = `${i18n.language}-IN`;
+
+      try {
+        // Translate titles
+        const resTitles = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/translate`,
+          { texts: issues.map((i) => i.title), targetLanguage: langCode }
+        );
+        setTranslatedTitles(resTitles.data.translatedTexts);
+
+        // Translate descriptions
+        const resDescriptions = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/translate`,
+          { texts: issues.map((i) => i.description), targetLanguage: langCode }
+        );
+        setTranslatedDescriptions(resDescriptions.data.translatedTexts);
+      } catch (err) {
+        console.error("Translation failed:", err);
+        setTranslatedTitles(issues.map((i) => i.title));
+        setTranslatedDescriptions(issues.map((i) => i.description));
+      }
+    };
+
+    translateTexts();
+  }, [i18n.language, issues]);
+
   // Unique departments
   const departments = [...new Set(issues.map((issue) => issue.department))];
 
   // Filter issues
   const filteredIssues = issues.filter(
-    (issue) =>
+    (issue, idx) =>
       issue.status === "completed" &&
       issue.id.toLowerCase().includes(searchId.toLowerCase()) &&
       (selectedDepartment === "" || issue.department === selectedDepartment)
@@ -95,9 +130,9 @@ export default function History() {
         </p>
       ) : (
         <div className="flex flex-col gap-6 max-h-[75vh] overflow-y-auto px-1">
-          {filteredIssues.map((issue, index) => (
+          {filteredIssues.map((issue, idx) => (
             <div
-              key={index}
+              key={idx}
               className="w-full bg-white rounded-3xl shadow-lg p-5 md:p-6 border border-gray-200 hover:shadow-2xl transform hover:-translate-y-1 transition duration-300"
             >
               <div className="flex flex-col md:flex-row justify-between gap-6">
@@ -121,7 +156,7 @@ export default function History() {
                 {/* Text details */}
                 <div className="flex-1 space-y-2">
                   <h3 className="text-lg md:text-2xl font-bold text-indigo-700">
-                    {issue.title}
+                    {translatedTitles[idx] || issue.title}
                   </h3>
                   <p className="text-gray-700 text-sm md:text-base">
                     <span className="font-semibold">{t("id")}:</span> {issue.id}
@@ -140,7 +175,7 @@ export default function History() {
                   </p>
                   <p className="text-gray-700 text-sm md:text-base">
                     <span className="font-semibold">{t("description")}:</span>{" "}
-                    {issue.description}
+                    {translatedDescriptions[idx] || issue.description}
                   </p>
                 </div>
 

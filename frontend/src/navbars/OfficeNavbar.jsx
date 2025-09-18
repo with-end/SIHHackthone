@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 export default function Navbar({isLoggedIn , mode , onLogout , variable }) {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
+  
 
   const handleChange = (e) => {
     const department = e.target.value;
@@ -24,7 +25,7 @@ export default function Navbar({isLoggedIn , mode , onLogout , variable }) {
       <div className="flex items-center gap-2">
         <span className="text-2xl">🏛️</span>
         <h1 className="text-xl font-bold text-blue-800">
-          {mode === "office" ? "Admin Dashboard" : "Department Dashboard"}
+          {mode === "office" ? "Admin Dashboard" : "Department Dashboard" }
         </h1>
       </div>
 
