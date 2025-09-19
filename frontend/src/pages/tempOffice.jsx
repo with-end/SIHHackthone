@@ -206,6 +206,7 @@ export default function HomePage({ mode }) {
         ))}
       </div>
 
+
       {/* Main Section */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left side chart (office = dept summary, department = status chart) */}
