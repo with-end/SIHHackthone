@@ -211,11 +211,11 @@ export default function HomePage({ mode }) {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left side chart (office = dept summary, department = status chart) */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-md p-4 sm:p-6">
-          {/* {variable === "office" ? (
+          {variable === "office" ? (
             <Chart deptSummary={deptSummary} type="department" />
           ) : (
             <Chart statusCounts={statusCounts} type="status" />
-          )} */}
+          )}
         </div>
 
         {/* Issues Table */}
