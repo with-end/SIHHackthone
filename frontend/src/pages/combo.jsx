@@ -59,7 +59,7 @@ export default function CombinedNagarPalikaPage() {
   // Fetch all nagarpalikas
   const fetchNagarPalikas = async () => {
     try {
-      const res = await axios.get(API_URL);
+      const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nagarpalika`); 
 
       const newColors = { ...colors };
       res.data.forEach((np) => {
@@ -109,9 +109,9 @@ export default function CombinedNagarPalikaPage() {
       };
 
       if (npId) {
-        await axios.put(`${API_URL}/${npId}`, body);
+        await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nagarpalika/${npId}`, body);
       } else {
-        const res = await axios.post(API_URL, body);
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/nagarpalika`, body);
         setNagarpalikas((prev) => [...prev, res.data]);
         setColors((prev) => ({ ...prev, [res.data._id]: generateColor() }));
       }
@@ -130,7 +130,7 @@ export default function CombinedNagarPalikaPage() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this Municipal Councipal")) return;
     try {
-      await axios.delete(`${API_URL}/${id}`);
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/nagarpalika/${id}`);
       setNagarpalikas((prev) => prev.filter((np) => np._id !== id));
       setColors((prevColors) => {
         const { [id]: _, ...rest } = prevColors;

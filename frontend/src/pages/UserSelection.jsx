@@ -60,7 +60,7 @@ export default function UserSelection() {
 
   const options = [
     { label: "Public", path: "/public" },
-    { label: "Municiple Council", path: "/login" },
+    { label: "Municipal Council", path: "/login" },
     { label: "State Govt.", path: "/state" },
   ];
 
