@@ -1,4 +1,16 @@
 import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+// ✅ Register chart.js components (important!)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 export default function Chart({ deptSummary, statusCounts, type }) {
   let data;
@@ -36,10 +48,10 @@ export default function Chart({ deptSummary, statusCounts, type }) {
           ],
           backgroundColor: [
             "rgba(255, 206, 86, 0.7)", // yellow
-            "rgba(54, 162, 235, 0.7)",   // blue
-            "rgba(75, 192, 192, 0.7)",
-            "rgba(34,197,94,0.7)",  // green
-            "rgba(239,68,68,0.7)",
+            "rgba(54, 162, 235, 0.7)", // blue
+            "rgba(75, 192, 192, 0.7)", // teal
+            "rgba(34,197,94,0.7)",     // green
+            "rgba(239,68,68,0.7)",     // red
           ],
         },
       ],

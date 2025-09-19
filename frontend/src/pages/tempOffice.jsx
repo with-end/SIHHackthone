@@ -3,8 +3,33 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+   Filler, 
+} from "chart.js";
+
 import { Bell, LogOut, CheckCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
 import Chart from "../components/Chart";
+
+// Register once (fixes "point not registered" error)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend ,
+   Filler, 
+);
+
 
 export default function HomePage({ mode }) {
   let variable = mode ;
@@ -194,7 +219,7 @@ export default function HomePage({ mode }) {
 
         {/* Issues Table */}
         <div className="lg:col-span-3 bg-white rounded-xl shadow-md p-4 sm:p-6 flex flex-col">
-           <th
+           <p
   className="pb-2 cursor-pointer select-none flex items-center gap-1 text-amber-700 hover:text-blue-500 transition-colors duration-200"
   onClick={() => requestSort("priority")}
 >
@@ -205,7 +230,7 @@ export default function HomePage({ mode }) {
       {sortConfig.direction === "asc" ? "▲" : "▼"}
     </span>
   )}
-</th>
+</p>
           <h2 className="text-lg font-bold mb-4 text-blue-900">Current Issues</h2>
           <div className="overflow-y-auto h-[300px]">
            
