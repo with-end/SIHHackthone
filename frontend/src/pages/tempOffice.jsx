@@ -293,7 +293,7 @@ export default function HomePage({ mode }) {
 
       {/* Overall Trend Chart */}
       <div className="bg-white rounded-xl shadow-md p-6 h-[350px]">
-        <Line data={lineData} options={lineOptions} />
+        {/* <Line data={lineData} options={lineOptions} /> */}
       </div>
     </div>
   );
