@@ -28,7 +28,7 @@ export default function NagarPalikaLogin() {
       
       if (loginType === "main") navigate("/office");
       else if( category=="head" ) navigate(`/department/${department}`);
-      else navigate("/verify", { state: { officerId : res.data.officerId } });
+      else navigate("/verify", { state: { officer : res.data.officer } });
     } catch (err) {
       console.error(err);
       alert("Login failed. Please check credentials.");

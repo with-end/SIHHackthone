@@ -132,12 +132,12 @@ router.post("/auth/:nagarId", async (req, res) => {
     const officer = await Officer.findOne({ _id: { $in: officers }, email });
 
     if (officer && officer.password === password) {
-      return res.json({ message: "login successful" ,officerId : officer._id , success: true });
+      return res.json({ message: "login successful" ,officer : officer , success: true });
     }
 
     return res.status(401).json({ message: "invalid credentials", success: false });
 
-  } catch (err) {
+  } catch (err){
     console.log(err);
     return res.status(500).json({ error: "error while authentication", success: false });
   }

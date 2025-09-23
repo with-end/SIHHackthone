@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
+import io from 'socket.io-client' ;
 
 export default function History() {
   const [issues, setIssues] = useState([]);
@@ -10,13 +11,13 @@ export default function History() {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [loading, setLoading] = useState(false);
   const { t, i18n } = useTranslation();
+   const nagarId = localStorage.getItem("nagarId");
 
   // Fetch completed issues from backend
   useEffect(() => {
     const fetchCompletedIssues = async () => {
       setLoading(true);
       try {
-        const nagarId = localStorage.getItem("nagarId");
         const res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/reports/com/completed?nagarId=${nagarId}`
         );
@@ -88,6 +89,38 @@ export default function History() {
       issue.id.toLowerCase().includes(searchId.toLowerCase()) &&
       (selectedDepartment === "" || issue.department === selectedDepartment)
   );
+
+  useEffect(() => {
+            const socket = io('http://localhost:3000') ;
+  
+           socket.on("reportStatusChanged", ({ report }) => {
+  if (report && report.nagarId === nagarId && report.status === "completed") {
+    const mappedReport = {
+      id: report.reportId || "",
+      title: report.title,
+      status: report.status,
+      department: report.department || t("na"),
+      submittedDate: report.submissionDate
+        ? new Date(report.submissionDate).toLocaleDateString()
+        : "--",
+      completedDate: report.completionDate
+        ? new Date(report.completionDate).toLocaleDateString()
+        : "--",
+      description: report.description,
+      imageUrl: report.imageUrl || null,
+    };
+
+    setIssues((prev) => [...prev, mappedReport]);
+    setTranslatedTitles((prev) => [...prev, mappedReport.title]);
+    setTranslatedDescriptions((prev) => [...prev, mappedReport.description]);
+  }
+});
+
+      
+          return () => {
+            socket.off('reportStatusChanged') ;;
+          };
+        }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-4 md:p-8">

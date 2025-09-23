@@ -17,6 +17,7 @@ import {
 
 import { Bell, LogOut, CheckCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
 import Chart from "../components/Chart";
+import io from 'socket.io-client' ;
 
 // Register once (fixes "point not registered" error)
 ChartJS.register(
@@ -61,6 +62,7 @@ export default function HomePage({ mode }) {
     };
     fetchData();
   }, [variable, nagarId]);
+
 
 
   // handle the status of the report 
@@ -148,6 +150,32 @@ export default function HomePage({ mode }) {
     if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     setSortConfig({ key, direction });
   };
+
+
+  // for real-time updates using socket.io 
+  useEffect(() => {
+           const socket = io('http://localhost:3000') ;
+
+          socket.on('assigned', (report) => {
+              if( report.nagarId === nagarId && ( variable==="office" || report.department === variable )){
+                setIssues(prev => [...prev , report]) ;
+                // update status counts 
+                setStatusCounts(prevCounts => {
+                  const updated = { ...prevCounts };
+                  if(updated["pending"] !== undefined){
+                    updated["pending"] = updated["pending"]+1 ;
+                    return updated ;
+                  }
+                })
+                
+              }
+           });
+    
+        return () => {
+          socket.off('assigned');
+        };
+      }, []);
+
 
   // ✅ Trend chart
   const lineData = {

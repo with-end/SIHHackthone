@@ -1,20 +1,39 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useLocation } from "react-router-dom";
+import io from 'socket.io-client';
+
 
 
 export default function OfficerDashboard() {
   const location = useLocation();
-  const { officerId } = location.state || {};
+  const { officer } = location.state || {};
+  const officerId = officer ? officer._id : null ;
   const [reports, setReports] = useState([]);
-  const [status, setStatus] = useState("inactive");
+  const [status, setStatus] = useState(officer && officer.status!=="inactive" ? "active" : "inactive") ;
   const [loading, setLoading] = useState(false);
   const [approveLoading, setApproveLoading] = useState(null);
 
-  useEffect(() => {
-    console.log(officerId) ;
+  useEffect(() => {        
+    console.log(officer) ;
     fetchReports();
   }, []);
+
+ 
+  useEffect(() => {
+          const socket = io('http://localhost:3000') ;
+
+          socket.on('assigned', (report) => {
+             if( report.assignedOfficer === officerId ){
+               setReports(prev => [...prev , report]) ;
+               console.log("new report assigned" , report) ;  
+             }
+           });
+    
+        return () => {
+          socket.off('assigned');
+        };
+      }, []);
 
   async function fetchReports() {
     setLoading(true);
@@ -27,7 +46,7 @@ export default function OfficerDashboard() {
     setLoading(false);
   }
 
-  async function updateStatus(newStatus) {
+  async function updateStatus(newStatus){
     setStatus(newStatus);
     await axios.post(`${import.meta.env.VITE_BACKEND_URL}/officer/${officerId}/status`, { status: newStatus });
     fetchReports();
@@ -37,10 +56,10 @@ export default function OfficerDashboard() {
     setApproveLoading(reportId);
     await axios.post(`${import.meta.env.VITE_BACKEND_URL}/officer/${officerId}/reports/${reportId}/approve`);
     setApproveLoading(null);
-    fetchReports();
+    setReports((prev) => prev.filter((r) => r._id !== reportId)); // remove approved report from list 
   }
 
-  const pendingReports = reports.filter(r => r.status === "submitted").length;
+  const pendingReports = reports.filter(r => r.status === "pending").length;
 
   return (
     <div className="p-4 max-w-6xl mx-auto">

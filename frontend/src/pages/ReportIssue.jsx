@@ -3,20 +3,42 @@ import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { openDB } from "idb"; // for IndexedDB offline storage
+import { v4 as uuidv4 } from "uuid";
 
 // Fix default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
-
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
+// IndexedDB helpers
+const DB_NAME = "reportsDB";
+const STORE_NAME = "pendingReports";
 
+async function getDB() {
+  return openDB(DB_NAME, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "reportId" });
+      }
+    },
+  });
+}
+
+async function saveReportToDB(report) {
+  const db = await getDB();
+  await db.put(STORE_NAME, report);
+}
+
+// Location picker component
 function LocationPicker({ location, setLocation }) {
   useMapEvents({
     click(e) {
@@ -28,7 +50,6 @@ function LocationPicker({ location, setLocation }) {
 
 export default function SubmitReport() {
   const { t } = useTranslation();
-
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -39,7 +60,6 @@ export default function SubmitReport() {
   const [loading, setLoading] = useState(false);
   const nagarId = localStorage.getItem("nagarId");
   const [email, setEmail] = useState(null);
-
   const mapRef = useRef(null);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -93,9 +113,7 @@ export default function SubmitReport() {
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      const blob = await new Promise((res) =>
-        canvas.toBlob(res, "image/jpeg")
-      );
+      const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg"));
       const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
 
       setImageFile(file);
@@ -126,40 +144,61 @@ export default function SubmitReport() {
     }
   }, []);
 
-  // Submit report
+  // Convert file to base64
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  // Submit report with offline support
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!location) return alert(t("selectLocation"));
-
     setLoading(true);
+
+    const reportId = uuidv4(); // unique ID
+    const report = {
+      reportId,
+      reporterEmail: email,
+      nagarId,
+      title,
+      description,
+      location: { type: "Point", coordinates: [location[1], location[0]] },
+      status: "submitted",
+    };
+
+    if (imageFile) {
+      report.imageBase64 = await fileToBase64(imageFile);
+    }
 
     try {
       const formData = new FormData();
-      formData.append("reporterEmail", email);
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append(
-        "location",
-        JSON.stringify({
-          type: "Point",
-          coordinates: [location[1], location[0]],
-        })
-      );
+      formData.append("reporterEmail", report.reporterEmail);
+      formData.append("title", report.title);
+      formData.append("description", report.description);
+      formData.append("location", JSON.stringify(report.location));
       if (imageFile) formData.append("image", imageFile);
 
       await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`,
         formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
+        { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       alert(t("reportSubmitted"));
       navigate("/public");
     } catch (err) {
-      console.error(err);
-      alert(t("reportFailed"));
+      console.warn("Offline or network issue, saving report locally.", err);
+      await saveReportToDB(report);
+
+      if ("serviceWorker" in navigator && "SyncManager" in window) {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.sync.register("sync-reports");
+        alert(t("reportSavedOffline"));
+      }
     } finally {
       setLoading(false);
     }
@@ -167,7 +206,7 @@ export default function SubmitReport() {
 
   return (
     <div className="p-1 md:p-3 lg:p-4 flex flex-col md:flex-row gap-4">
-      {/* Form first on mobile */}
+      {/* Form */}
       <div className="w-full md:w-1/3 flex flex-col gap-4 order-1 md:order-none">
         <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-500 bg-clip-text text-transparent">
           {t("submitReport")}
@@ -182,10 +221,11 @@ export default function SubmitReport() {
             required
           />
           <input
-            type="text"
+            type="email"
             placeholder={t("emailId")}
             className="p-2 border rounded-lg"
             value={email}
+            inputMode="email"
             onChange={(e) => setEmail(e.target.value)}
             required
           />

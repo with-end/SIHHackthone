@@ -4,6 +4,10 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup, useMapEvents } from "
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useParams } from "react-router-dom";
+import io from 'socket.io-client';
+
+
+
 
 // --- your marker icons (same as before) ---
 const redIcon = new L.Icon({
@@ -92,6 +96,25 @@ export default function NagarPalikaMap({mode}) {
 
     fetchData();
   }, [nagarId]);
+
+
+  // real-time updation 
+  useEffect(() => {
+           const socket = io('http://localhost:3000') ;
+
+          socket.on('assigned', (report) => {
+              if( report.nagarId === nagarId && ( type==="office" || report.department === type )){
+                 setReports(prev => [...prev , report]) ;
+                
+              }
+           });
+    
+        return () => {
+          socket.off('assigned');
+        };
+      }, []);
+
+
 
   const getIconByStatus = (status) => {
     if (status === "completed") return greenIcon;

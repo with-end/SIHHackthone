@@ -43,6 +43,9 @@ officerRouter.post("/:officerId/status", async (req, res) => {
         await officer.save();
       }
     }
+
+    const io = req.app.get("io") ;
+    io.emit("status", officer) ; // notify all clients about status change
     
     res.json(officer);
   } catch (err) {
@@ -90,10 +93,14 @@ officerRouter.post("/:officerId/reports/:reportId/approve", async (req, res) => 
 
 // fetch updated officer to check assignedReports length
 const updatedOfficer = await Officer.findById(officerId);
+const io = req.app.get("io");
+    
 
 if (updatedOfficer.assignedReports.length === 0) {
   updatedOfficer.status = "active";
   await updatedOfficer.save();
+  io.emit("status", updatedOfficer); 
+
 }
 
 res.json({ success: true, report, officer: updatedOfficer });

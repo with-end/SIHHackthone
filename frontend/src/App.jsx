@@ -18,6 +18,7 @@ import Combo from './pages/combo' // for adding nagarpalika it is used
 import Verifyer from './pages/Verifyer' 
 import "./i18n"; 
 import TempOffice from './pages/tempOffice'
+import Test from './pages/test' 
 
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/trans" element={<Translator/>} />
         <Route path="/" element={<UserSelection/>} /> 
         <Route path="login" element={<Login /> } />
+        <Route path="test" element={<Test/>} /> 
           
          {/* for public pages */}
          <Route path="/public" element={<PublicLayout/>}>

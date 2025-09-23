@@ -13,6 +13,16 @@ import "./i18n";
 // Create a Query Client
 const queryClient = new QueryClient();
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg))
+      .catch(err => console.error('SW registration failed:', err));
+  });
+}
+
+
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <>
     <QueryClientProvider client={queryClient}>

@@ -20,14 +20,16 @@ router.post("/:nagarId", upload.fields([{ name: "image" }]), async (req, res) =>
   try {
     const { reporterEmail, title, description, location } = req.body;
     const { image } = req.files || {};
+    
     if (!reporterEmail || !title || !description || !location || !image) {
       return res.status(400).json({ error: "missing required Fields" });
     }
-
+    console.log("hellow123") ;
     const { nagarId } = req.params;
     const [lng, lat] = JSON.parse(location).coordinates;
     const department = await classifyDepartment(description);
     const descVector = await generateTextVector(description);
+    
     let priority = 0;
 
     const { secure_url, public_id } = await uploadImage(
@@ -77,7 +79,7 @@ router.post("/:nagarId", upload.fields([{ name: "image" }]), async (req, res) =>
         }
       }
     }
-
+    const io = req.app.get("io");
     // Create report
     const repId = (await Report.countDocuments()) + 1;
     const report = await Report.create({
@@ -103,10 +105,12 @@ router.post("/:nagarId", upload.fields([{ name: "image" }]), async (req, res) =>
         { nagarId },
         { $push: { [`${department}.pendingReports`]: report._id ,  [`${department}.reports`]: report._id } ,  $inc: { [`${department}.stats.pending`]: 1 }}
       );
+      io.emit("assigned", report);
     } else {
       await Officer.findByIdAndUpdate(givenOfficer, {
         $push: { assignedReports: report._id },
       });
+      io.emit("assigned", report);
       await NagarPalika.findOneAndUpdate(
         { nagarId },
         { $push: { [`${department}.reports`]: report._id } , $inc: { [`${department}.stats.pending`]: 1 } }
@@ -126,6 +130,8 @@ router.get("/:nagarId", async (req, res) => {
   try {
     const { nagarId } = req.params;
     const reports = await Report.find({ nagarId });
+    const io = req.app.get("io");
+    io.emit("nagarId", nagarId);
     res.json(reports);
   } catch (error) {
     console.error("Error fetching reports:", error);
@@ -218,8 +224,10 @@ router.patch("/:id/status", async (req, res) => {
     // 3. Apply the update atomically
     await NagarPalika.findOneAndUpdate({ nagarId: report.nagarId }, updateOps);
 
-    // sendMail(report.reporterEmail, status, report.reportId);
-
+    sendMail(report.reporterEmail, status, report.reportId);
+    const io = req.app.get("io") ;
+    io.emit("reportStatusChanged" , { report }) ; // notify all clients about status change
+    
     res.json(report);
   } catch (err) {
     console.error(err);

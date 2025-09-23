@@ -10,6 +10,7 @@ const client = new SarvamAIClient({
 // Batch translation endpoint
 router.post("/translate", async (req, res) => {
   const { texts, targetLanguage } = req.body;
+  console.log(texts , targetLanguage) ;
 
   if (!Array.isArray(texts) || texts.length === 0) {
     return res.status(400).json({ error: "texts must be a non-empty array" });

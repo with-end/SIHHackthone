@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Plus, Edit, Trash, Check } from "lucide-react";
 import { useParams } from "react-router-dom";
+import io from 'socket.io-client';
+
 
 export default function OfficerInfo({mode}) {
   let type = "all" ;
@@ -10,6 +12,7 @@ export default function OfficerInfo({mode}) {
      const { deptId } = useParams() ;
      type = deptId ;
   }
+ 
   const [selectedDept, setSelectedDept] = useState(type);
   const [officers, setOfficers] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -68,6 +71,20 @@ export default function OfficerInfo({mode}) {
       })
       .catch((err) => console.error("Error adding officer:", err));
   };
+
+  useEffect(() => {
+        const socket = io('http://localhost:3000') ;
+        socket.on('status', (officer) => {
+        if(officer && officer.department === selectedDept){
+          setOfficers((prev) => prev.map((o) => (o._id === officer._id ? officer : o ))) ;
+        }
+      });
+  
+      return () => {
+        socket.off('status');
+      };
+    }, []);
+    
 
   const updateOfficer = (id) => {
     const officer = officers.find((o) => o._id === id);

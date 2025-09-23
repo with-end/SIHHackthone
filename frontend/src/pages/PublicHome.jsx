@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
+import io from 'socket.io-client' ;
 
 export default function PublicHome() {
   const { t, i18n } = useTranslation();
@@ -27,6 +28,28 @@ export default function PublicHome() {
       })
       .catch((err) => console.error("Error fetching reports:", err));
   }, [nagarId]);
+
+  useEffect(() => { // for real-time updates 
+           const socket = io('http://localhost:3000') ;
+
+          socket.on('assigned', (report) => {
+            
+               setIssues(prev => [...prev , report]) ;
+               console.log("new report assigned" , report) ;  
+             
+           });
+
+           socket.on('reportStatusChanged', ({ report }) => {
+               if(report && report.nagarId === nagarId){
+                  setIssues((prev) => prev.map((r) => (r._id === report._id ? report : r ))) ;
+               }
+           })
+    
+        return () => {
+          socket.off('assigned');
+          socket.off('reportStatusChanged') ;
+        };
+      }, []);
 
   // ✅ Translate titles & descriptions whenever language changes
   useEffect(() => {
