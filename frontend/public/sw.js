@@ -45,7 +45,7 @@ async function syncReports() {
       }
 
       // Use string instead of import.meta.env
-      const BACKEND_URL = "http://localhost:3000/api";
+      const BACKEND_URL = "https://sihhackthone-production.up.railway.app/api";
       const response = await fetch(`${BACKEND_URL}/reports/${report.nagarId}`, {
         method: "POST",
         body: formData,

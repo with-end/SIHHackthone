@@ -31,6 +31,7 @@ export default function UserSelection() {
                   // ✅ Save nagarId for future
                   localStorage.setItem("nagarId", res.data.nagarId);
                   localStorage.setItem("center" , JSON.stringify(res.data.center)) ; // arry of location like [10,10]
+                  localStorage.setItem("myLocation" , JSON.stringify([latitude,longitude])) ; // arry of location like [10,10]
                 }
               } catch (err) {
                 console.error("API error:", err);

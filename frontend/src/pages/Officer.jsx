@@ -73,7 +73,7 @@ export default function OfficerInfo({mode}) {
   };
 
   useEffect(() => {
-        const socket = io('http://localhost:3000') ;
+        const socket = io(import.meta.env.VITE_BACKEND) ;
         socket.on('status', (officer) => {
         if(officer && officer.department === selectedDept){
           setOfficers((prev) => prev.map((o) => (o._id === officer._id ? officer : o ))) ;

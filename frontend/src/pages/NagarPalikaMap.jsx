@@ -100,7 +100,7 @@ export default function NagarPalikaMap({mode}) {
 
   // real-time updation 
   useEffect(() => {
-           const socket = io('http://localhost:3000') ;
+           const socket = io(import.meta.env.VITE_BACKEND) ;
 
           socket.on('assigned', (report) => {
               if( report.nagarId === nagarId && ( type==="office" || report.department === type )){

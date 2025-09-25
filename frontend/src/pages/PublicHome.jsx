@@ -30,7 +30,7 @@ export default function PublicHome() {
   }, [nagarId]);
 
   useEffect(() => { // for real-time updates 
-           const socket = io('http://localhost:3000') ;
+           const socket = io(import.meta.env.VITE_BACKEND) ;
 
           socket.on('assigned', (report) => {
             
@@ -40,6 +40,7 @@ export default function PublicHome() {
            });
 
            socket.on('reportStatusChanged', ({ report }) => {
+               console.log(report) ;
                if(report && report.nagarId === nagarId){
                   setIssues((prev) => prev.map((r) => (r._id === report._id ? report : r ))) ;
                }

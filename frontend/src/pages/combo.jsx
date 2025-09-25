@@ -4,7 +4,6 @@ import { MapContainer, TileLayer, Polygon, Popup, Marker, useMapEvents } from "r
 import L from "leaflet";
 import axios from "axios";
 
-const API_URL = "http://localhost:3000/api/nagarpalika";
 
 // 🟢 Marker Icon for office location
 const officeIcon = new L.Icon({

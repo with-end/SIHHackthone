@@ -154,9 +154,10 @@ export default function HomePage({ mode }) {
 
   // for real-time updates using socket.io 
   useEffect(() => {
-           const socket = io('http://localhost:3000') ;
+           const socket = io(import.meta.env.VITE_BACKEND) ;
 
           socket.on('assigned', (report) => {
+              console.log(report) ;
               if( report.nagarId === nagarId && ( variable==="office" || report.department === variable )){
                 setIssues(prev => [...prev , report]) ;
                 // update status counts 

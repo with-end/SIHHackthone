@@ -21,7 +21,7 @@ export default function OfficerDashboard() {
 
  
   useEffect(() => {
-          const socket = io('http://localhost:3000') ;
+          const socket = io(import.meta.env.VITE_BACKEND) ;
 
           socket.on('assigned', (report) => {
              if( report.assignedOfficer === officerId ){

@@ -7,6 +7,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { openDB } from "idb"; // for IndexedDB offline storage
 import { v4 as uuidv4 } from "uuid";
+import toast from 'react-hot-toast' ;
 
 // Fix default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -43,18 +44,20 @@ function LocationPicker({ location, setLocation }) {
   useMapEvents({
     click(e) {
       setLocation([e.latlng.lat, e.latlng.lng]);
+      console.log(e.latlng) ;
     },
   });
   return location ? <Marker position={location} /> : null;
 }
 
 export default function SubmitReport() {
-  const { t } = useTranslation();
+  const { t , i18n } = useTranslation();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
-  const [location, setLocation] = useState(null);
+  const myLocation = JSON.parse(localStorage.getItem("myLocation")) ;
+  const [location, setLocation] = useState(myLocation || null); // [lat, lng]
   const pos = JSON.parse(localStorage.getItem("center"));
   const [mapCenter, setMapCenter] = useState([pos[1], pos[0]]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +74,7 @@ export default function SubmitReport() {
       return;
     }
     const recognition = new window.webkitSpeechRecognition();
-    recognition.lang = "en-US";
+    recognition.lang = `${i18n.language}-IN`;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -122,27 +125,27 @@ export default function SubmitReport() {
       stream.getTracks().forEach((track) => track.stop());
     } catch (err) {
       console.error("Camera error:", err);
-      alert(t("cameraError"));
+      toast.success(t("cameraError"));
     }
   };
 
   // Auto location picker
-  useEffect(() => {
-    if (!location && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setLocation([lat, lng]);
-          setMapCenter([lat, lng]);
-        },
-        (err) => {
-          console.warn("Could not get location:", err.message);
-        },
-        { enableHighAccuracy: true }
-      );
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (!location && navigator.geolocation) {
+  //     navigator.geolocation.getCurrentPosition(
+  //       (pos) => {
+  //         const lat = pos.coords.latitude;
+  //         const lng = pos.coords.longitude;
+  //         setLocation([lat, lng]);
+  //         setMapCenter([lat, lng]);
+  //       },
+  //       (err) => {
+  //         console.warn("Could not get location:", err.message);
+  //       },
+  //       { enableHighAccuracy: true }
+  //     );
+  //   }
+  // }, []);
 
   // Convert file to base64
   const fileToBase64 = (file) =>
@@ -188,7 +191,7 @@ export default function SubmitReport() {
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      alert(t("reportSubmitted"));
+      toast.success(t("reportSubmitted"));
       navigate("/public");
     } catch (err) {
       console.warn("Offline or network issue, saving report locally.", err);
@@ -197,7 +200,7 @@ export default function SubmitReport() {
       if ("serviceWorker" in navigator && "SyncManager" in window) {
         const reg = await navigator.serviceWorker.ready;
         await reg.sync.register("sync-reports");
-        alert(t("reportSavedOffline"));
+        toast.success(t("reportOffline"));
       }
     } finally {
       setLoading(false);
