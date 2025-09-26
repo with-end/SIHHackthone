@@ -6,10 +6,7 @@ import L from "leaflet";
 import { useParams } from "react-router-dom";
 import io from 'socket.io-client';
 
-
-
-
-// --- your marker icons (same as before) ---
+// --- marker icons ---
 const redIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
   shadowUrl: "https://unpkg.com/leaflet@1.7/dist/images/marker-shadow.png",
@@ -33,7 +30,22 @@ const orangeIcon = new L.Icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
-const buildingIcon = new L.Icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png", iconSize: [45, 45], iconAnchor: [22, 45], popupAnchor: [0, -40] });
+
+// ✅ Blue icon for approved
+const blueIcon = new L.Icon({
+  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.7/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+const buildingIcon = new L.Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+  iconSize: [45, 45],
+  iconAnchor: [22, 45],
+  popupAnchor: [0, -40]
+});
 
 // --- point-in-polygon check ---
 function isPointInPolygon(point, polygon) {
@@ -64,30 +76,25 @@ function ClickHandler({ boundary }) {
   return null;
 }
 
-export default function NagarPalikaMap({mode}) {
+export default function NagarPalikaMap({ mode }) {
   const nagarId = localStorage.getItem("nagarId");
-  let type = "office" ;
-  if( mode=="department"){
-    const { deptId } = useParams() ;
-    type = deptId ;
+  let type = "office";
+  if (mode === "department") {
+    const { deptId } = useParams();
+    type = deptId;
   }
   const [boundary, setBoundary] = useState([]);
   const [reports, setReports] = useState([]);
-  const pos = JSON.parse(localStorage.getItem("center"))
-  const [center, setCenter] = useState([pos[1],pos[0]]); // fallback default
+  const pos = JSON.parse(localStorage.getItem("center"));
+  const [center, setCenter] = useState([pos[1], pos[0]]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const boundaryRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nagarpalika/${nagarId}/boundary`);
-        setBoundary(boundaryRes.data.boundary); // for boundry and location 
+        setBoundary(boundaryRes.data.boundary);
 
-        // if (boundaryRes.data.boundary.length > 0) {
-        //   setCenter(boundaryRes.data.boundary[0]); // roughly first point as center
-        // }
-         console.log(type , mode ) ;
         const reportsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nagarpalika/${nagarId}/reports/${type}`);
-        console.log(reportsRes) ;
         setReports(reportsRes.data);
       } catch (err) {
         console.error("Failed to load data:", err);
@@ -97,67 +104,94 @@ export default function NagarPalikaMap({mode}) {
     fetchData();
   }, [nagarId]);
 
-
-  // real-time updation 
+  // Real-time updates
   useEffect(() => {
-           const socket = io(import.meta.env.VITE_BACKEND) ;
+    const socket = io(import.meta.env.VITE_BACKEND);
 
-          socket.on('assigned', (report) => {
-              if( report.nagarId === nagarId && ( type==="office" || report.department === type )){
-                 setReports(prev => [...prev , report]) ;
-                
-              }
-           });
-    
-        return () => {
-          socket.off('assigned');
-        };
-      }, []);
+    socket.on('assigned', (report) => {
+      if (report.nagarId === nagarId && (type === "office" || report.department === type)) {
+        setReports(prev => [...prev, report]);
+      }
+    });
 
-
+    return () => {
+      socket.off('assigned');
+    };
+  }, []);
 
   const getIconByStatus = (status) => {
     if (status === "completed") return greenIcon;
     if (status === "inprogress") return orangeIcon;
+    if (status === "approved") return blueIcon; // ✅ new
     return redIcon;
   };
 
   return (
-    <div className="w-full h-screen">
-      <MapContainer center={center} zoom={7} className="w-full h-full">
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        />
+    <div className="flex bg-gray-100 w-full h-screen">
+      {/* Legend Panel */}
+      <div className="w-60 rounded mx-2 bg-white shadow-lg p-4 border-r overflow-y-auto">
+        <h2 className="text-lg font-bold mb-3">🗺️ Legend</h2>
+        <ul className="space-y-3">
+          <li className="flex items-center space-x-2">
+            <img src={redIcon.options.iconUrl} alt="Pending" className="w-5 h-8" />
+            <span>Pending Issue</span>
+          </li>
+          <li className="flex items-center space-x-2">
+            <img src={orangeIcon.options.iconUrl} alt="In Progress" className="w-5 h-8" />
+            <span>In Progress Issue</span>
+          </li>
+          <li className="flex items-center space-x-2">
+            <img src={greenIcon.options.iconUrl} alt="Completed" className="w-5 h-8" />
+            <span>Completed Issue</span>
+          </li>
+          <li className="flex items-center space-x-2">
+            <img src={blueIcon.options.iconUrl} alt="Approved" className="w-5 h-8" />
+            <span>Approved Issue</span>
+          </li>
+          <li className="flex items-center space-x-2">
+            <img src={buildingIcon.options.iconUrl} alt="Office" className="w-8 h-8" />
+            <span>Municipal Office</span>
+          </li>
+        </ul>
+      </div>
 
-        {/* Boundary */}
-        {boundary.length > 0 && (
-          <Polyline positions={[...boundary, boundary[0]]}  pathOptions={{ color: "red", weight: 3 }} />
-        )}
+      {/* Map Section */}
+      <div className="flex-1">
+        <MapContainer center={center} zoom={7} className="w-full h-full">
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          />
 
-        {/* NagarPalika Building */}
-        {boundary.length > 0 && (
-          <Marker position={center} icon={buildingIcon}>
-            <Popup>🏛️ <b>NagarPalika Office</b></Popup>
-          </Marker>
-        )}
+          {/* Boundary */}
+          {boundary.length > 0 && (
+            <Polyline positions={[...boundary, boundary[0]]} pathOptions={{ color: "red", weight: 3 }} />
+          )}
 
-        {/* Issue markers */}
-        {reports.map((issue, i) => (
-          <Marker
-            key={i}
-            position={[issue.location.coordinates[1], issue.location.coordinates[0]]} // [lat,lng]
-            icon={getIconByStatus(issue.status)}
-          >
-            <Popup>
-              <b>{issue.title}</b> <br />
-              Status: {issue.status}
-            </Popup>
-          </Marker>
-        ))}
+          {/* NagarPalika Building */}
+          {boundary.length > 0 && (
+            <Marker position={center} icon={buildingIcon}>
+              <Popup>🏛️ <b>NagarPalika Office</b></Popup>
+            </Marker>
+          )}
 
-        {boundary.length > 0 && <ClickHandler boundary={boundary} />}
-      </MapContainer>
+          {/* Issue markers */}
+          {reports.map((issue, i) => (
+            <Marker
+              key={i}
+              position={[issue.location.coordinates[1], issue.location.coordinates[0]]}
+              icon={getIconByStatus(issue.status)}
+            >
+              <Popup>
+                <b>{issue.title}</b> <br />
+                Status: {issue.status}
+              </Popup>
+            </Marker>
+          ))}
+
+          {boundary.length > 0 && <ClickHandler boundary={boundary} />}
+        </MapContainer>
+      </div>
     </div>
   );
 }

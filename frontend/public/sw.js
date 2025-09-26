@@ -45,7 +45,7 @@ async function syncReports() {
       }
 
       // Use string instead of import.meta.env
-      const BACKEND_URL = "https://sihhackthone-production.up.railway.app/api";
+      const BACKEND_URL = "http://localhost:3000/api";
       const response = await fetch(`${BACKEND_URL}/reports/${report.nagarId}`, {
         method: "POST",
         body: formData,
@@ -54,6 +54,7 @@ async function syncReports() {
       if (response.ok) {
         await db.delete(STORE_NAME, report.reportId);
         console.log('[SW] Report synced:', report.reportId);
+        
       } else {
         console.error('[SW] Failed to sync report:', report.reportId);
       }

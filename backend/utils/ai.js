@@ -21,7 +21,7 @@ async function classifyDepartment(description) {
           {
             role: "system",
             content:
-              "Classify this issue into exactly one department: roads, water, electricity, sanitation, health. Reply only with the department name.",
+              "Classify this issue into exactly one department: roads, water, electricity, sanitation, health  ,inValid. Reply only with the department name.",
           },
           { role: "user", content: description },
         ],

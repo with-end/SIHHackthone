@@ -21,7 +21,7 @@ export default function OfficerDashboard() {
 
  
   useEffect(() => {
-          const socket = io(import.meta.env.VITE_BACKEND) ;
+          const socket = io(import.meta.env.VITE_BACKEND); ;
 
           socket.on('assigned', (report) => {
              if( report.assignedOfficer === officerId ){
@@ -62,9 +62,9 @@ export default function OfficerDashboard() {
   const pendingReports = reports.filter(r => r.status === "pending").length;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-1 md:p-4 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl p-6 shadow-lg flex flex-col sm:flex-row justify-between items-center mb-6">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl p-4 shadow-lg flex flex-col sm:flex-row justify-between items-center mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold text-center sm:text-left">Officer Dashboard</h1>
         <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row items-center gap-3">
           <span className="font-semibold">
@@ -73,6 +73,7 @@ export default function OfficerDashboard() {
               {status.toUpperCase()}
             </span>
           </span>
+          <div className="flex gap-2">
           <button
             onClick={() => updateStatus("active")}
             className="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-xl shadow text-white font-medium transition"
@@ -85,6 +86,7 @@ export default function OfficerDashboard() {
           >
             Set Inactive
           </button>
+          </div>
         </div>
       </div>
 

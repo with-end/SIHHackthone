@@ -19,6 +19,9 @@ import Verifyer from './pages/Verifyer'
 import "./i18n"; 
 import TempOffice from './pages/tempOffice'
 import Test from './pages/test' 
+import Authe from './pages/Authe'
+import Report from './pages/Report'
+
 
 
 function App() {
@@ -31,9 +34,13 @@ function App() {
         <Route path="/" element={<UserSelection/>} /> 
         <Route path="login" element={<Login /> } />
         <Route path="test" element={<Test/>} /> 
+        <Route path="report" element={<Report/>} /> 
+
           
          {/* for public pages */}
          <Route path="/public" element={<PublicLayout/>}>
+          <Route path="signIn" element={<Authe type="signin" />} ></Route>
+          <Route path="signUp" element={<Authe type="signup" />}></Route>
           <Route index element={<PublicHome/>} /> {/* Default page */}
           <Route path="report" element={<ReportIssue />} />
           <Route path='track' element={<Track/>} /> 

@@ -191,7 +191,7 @@ router.get("/:nagarId/reports/:type", async (req, res) => {
     const reports = await Report.find(query);
     res.json(reports);
 
-    console.log("Reports fetched:", reports.length, "Type:", type);
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch reports" });

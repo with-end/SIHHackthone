@@ -8,6 +8,9 @@ import "leaflet/dist/leaflet.css";
 import { openDB } from "idb"; // for IndexedDB offline storage
 import { v4 as uuidv4 } from "uuid";
 import toast from 'react-hot-toast' ;
+import { useSelector, useDispatch } from "react-redux";
+import { setEmail, clearEmail } from "../store/authSlice"
+
 
 // Fix default icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -44,7 +47,7 @@ function LocationPicker({ location, setLocation }) {
   useMapEvents({
     click(e) {
       setLocation([e.latlng.lat, e.latlng.lng]);
-      console.log(e.latlng) ;
+      console.log(e.latlng);
     },
   });
   return location ? <Marker position={location} /> : null;
@@ -56,16 +59,20 @@ export default function SubmitReport() {
   const [description, setDescription] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
-  const myLocation = JSON.parse(localStorage.getItem("myLocation")) ;
+  const myLocation = JSON.parse(localStorage.getItem("myLocation"));
   const [location, setLocation] = useState(myLocation || null); // [lat, lng]
   const pos = JSON.parse(localStorage.getItem("center"));
-  const [mapCenter, setMapCenter] = useState([pos[1], pos[0]]);
+  const [mapCenter, setMapCenter] = useState(myLocation || [pos[1], pos[0]]); // fallback default
   const [loading, setLoading] = useState(false);
   const nagarId = localStorage.getItem("nagarId");
-  const [email, setEmail] = useState(null);
+  const emailId = useSelector((state) => state.auth.email);
+
+
+  const [email, setEmail] = useState(emailId ? emailId : null);
   const mapRef = useRef(null);
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+
 
   // Voice-to-text
   const handleSpeak = () => {
@@ -129,24 +136,6 @@ export default function SubmitReport() {
     }
   };
 
-  // Auto location picker
-  // useEffect(() => {
-  //   if (!location && navigator.geolocation) {
-  //     navigator.geolocation.getCurrentPosition(
-  //       (pos) => {
-  //         const lat = pos.coords.latitude;
-  //         const lng = pos.coords.longitude;
-  //         setLocation([lat, lng]);
-  //         setMapCenter([lat, lng]);
-  //       },
-  //       (err) => {
-  //         console.warn("Could not get location:", err.message);
-  //       },
-  //       { enableHighAccuracy: true }
-  //     );
-  //   }
-  // }, []);
-
   // Convert file to base64
   const fileToBase64 = (file) =>
     new Promise((resolve, reject) => {
@@ -185,14 +174,15 @@ export default function SubmitReport() {
       formData.append("location", JSON.stringify(report.location));
       if (imageFile) formData.append("image", imageFile);
 
-      await axios.post(
+     const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      toast.success(t("reportSubmitted"));
-      navigate("/public");
+      
+      if(res.data.message==="reportSubmitted"){  toast.success(t(res.data.message)); navigate("/public"); }
+      else { toast.error(t(res.data.message)) ;}
     } catch (err) {
       console.warn("Offline or network issue, saving report locally.", err);
       await saveReportToDB(report);
@@ -208,12 +198,18 @@ export default function SubmitReport() {
   };
 
   return (
-    <div className="p-1 md:p-3 lg:p-4 flex flex-col md:flex-row gap-4">
+    <div className="p-1 lg:p-4 flex flex-col-reverse md:flex-row gap-4">
       {/* Form */}
-      <div className="w-full md:w-1/3 flex flex-col gap-4 order-1 md:order-none">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-500 bg-clip-text text-transparent">
+      
+      <div className="w-full md:w-1/3 flex flex-col gap-4 ">
+        {/* Heading */}
+        <h2
+          className="text-2xl max-sm:hidden font-bold bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-500 bg-clip-text text-transparent
+                      "
+        >
           {t("submitReport")}
         </h2>
+
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <input
             type="text"
@@ -271,13 +267,18 @@ export default function SubmitReport() {
             />
           </div>
 
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt="Preview"
-              className="w-full h-40 object-cover rounded-lg"
-            />
-          )}
+          {/* Image preview or black box for large screens */}
+          <div className="relative w-full">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt="Preview"
+                className="w-full h-40 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="hidden md:block w-full h-40 bg-gray-200 rounded-lg" />
+            )}
+          </div>
 
           <button
             type="submit"
@@ -291,10 +292,10 @@ export default function SubmitReport() {
       </div>
 
       {/* Map */}
-      <div className="w-full md:w-2/3 h-[60vh] md:h-[80vh] rounded-xl overflow-hidden shadow-lg">
+      <div className="w-full md:w-2/3 h-[40vh] md:h-[84vh] rounded-xl overflow-hidden shadow-lg">
         <MapContainer
           center={mapCenter}
-          zoom={7}
+          zoom={12}
           className="w-full h-full z-0"
           whenCreated={(mapInstance) => {
             mapRef.current = mapInstance;
@@ -304,6 +305,12 @@ export default function SubmitReport() {
           <LocationPicker location={location} setLocation={setLocation} />
         </MapContainer>
       </div>
+      <h2
+          className="text-2xl md:hidden font-bold bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-500 bg-clip-text text-transparent
+                      "
+        >
+          {t("submitReport")}
+      </h2>
     </div>
   );
 }

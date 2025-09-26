@@ -18,7 +18,7 @@ function test() {
 
   // Listen for new reports
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_BACKEND) ;
+    const socket = io(import.meta.env.VITE_BACKEND); 
     socket.on('nagarId', (nagarId1) => {
       console.log("Received Nagar ID:", nagarId1);
     });

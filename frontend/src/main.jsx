@@ -7,6 +7,9 @@ import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter } from "react-router-dom";
 import "leaflet/dist/leaflet.css";
 import "./i18n"; 
+import { Toaster } from "react-hot-toast";
+import { Provider } from "react-redux";
+import { store } from "./store/store.js";
 
 
 
@@ -25,13 +28,16 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <>
+    <Provider store={store}>
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
      <BrowserRouter>
       <App />
+      <Toaster  reverseOrder={false} />
     </BrowserRouter>
     </HelmetProvider>
     </QueryClientProvider>
+    </Provider>
   </>
   
 );

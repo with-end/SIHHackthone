@@ -52,5 +52,13 @@
   "selectLocation": "Please select a location on the map.",
   "reportSubmitted": "Report submitted successfully.",
   "reportFailed": "Failed to submit report.",
-  "clickOnMap": "Click on the map to select the report location."
+  "clickOnMap": "Click on the map to select the report location." ,
+  "pending": "Pending" ,
+  "others": "Others" ,
+  "inprogress": "In Progress" ,
+  "duplicate" : "Duplicate report found",
+  "not" : "Not a valid report" ,
+  "reportOffline" : "Report saved offline" ,
+  "logout": "LogOut", "register": "Register", "upvote": "Upvote"
+  
 }

@@ -91,7 +91,7 @@ export default function History() {
   );
 
   useEffect(() => {
-            const socket = io(import.meta.env.VITE_BACKEND) ; 
+            const socket = io(import.meta.env.VITE_BACKEND);  
   
            socket.on("reportStatusChanged", ({ report }) => {
   if (report && report.nagarId === nagarId && report.status === "completed") {

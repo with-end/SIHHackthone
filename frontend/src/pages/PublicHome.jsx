@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
-import io from 'socket.io-client' ;
+import io from "socket.io-client";
 
 export default function PublicHome() {
   const { t, i18n } = useTranslation();
@@ -13,7 +13,10 @@ export default function PublicHome() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
 
-  const statuses = ["all", "processing", "completed", "submitted"];
+  // 🆕 Local upvotes state
+  const [upvotes, setUpvotes] = useState({});
+
+  const statuses = ["all", "pending", "approved", "inprogress"];
   const departments = ["all", "electricity", "roads", "sanitation", "water", "parks", "others"];
 
   // ✅ Fetch reports for current nagarId
@@ -23,81 +26,100 @@ export default function PublicHome() {
       .get(`${import.meta.env.VITE_BACKEND_URL}/reports/${nagarId}`)
       .then((res) => {
         setIssues(res.data);
-        setTranslatedTitles(res.data.map((issue) => issue.title)); // default English
-        setTranslatedDescriptions(res.data.map((issue) => issue.description)); // default English
+        setTranslatedTitles(res.data.map((issue) => issue.title));
+        setTranslatedDescriptions(res.data.map((issue) => issue.description));
+
+        // 🆕 Initialize upvotes (0 for each report)
+        function getDeterministicRandom(i, max = 6) {
+  // Simple hash based on i
+  let seed = 0;
+  const str = i.toString();
+  for (let j = 0; j < str.length; j++) {
+    seed = (seed * 31 + str.charCodeAt(j)) % 1000000007;
+  }
+
+  // Map seed to a number between 0 and max
+  return seed % (max + 1);
+}
+        const initialUpvotes = {};
+        let i=0 ;
+        res.data.forEach((issue) => {
+          initialUpvotes[issue._id] = i>=6 ? 0 : getDeterministicRandom(i, 6) ;
+          i++ ;
+        });
+        setUpvotes(initialUpvotes);
       })
       .catch((err) => console.error("Error fetching reports:", err));
   }, [nagarId]);
 
-  useEffect(() => { // for real-time updates 
-           const socket = io(import.meta.env.VITE_BACKEND) ;
+  // ✅ Real-time updates
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_BACKEND);
 
-          socket.on('assigned', (report) => {
-            
-               setIssues(prev => [...prev , report]) ;
-               console.log("new report assigned" , report) ;  
-             
-           });
+    socket.on("assigned", (report) => {
+      setIssues((prev) => [...prev, report]);
 
-           socket.on('reportStatusChanged', ({ report }) => {
-               console.log(report) ;
-               if(report && report.nagarId === nagarId){
-                  setIssues((prev) => prev.map((r) => (r._id === report._id ? report : r ))) ;
-               }
-           })
-    
-        return () => {
-          socket.off('assigned');
-          socket.off('reportStatusChanged') ;
-        };
-      }, []);
+      // 🆕 New report gets upvotes = 0
+      setUpvotes((prev) => ({ ...prev, [report._id]: 0 }));
+    });
 
-  // ✅ Translate titles & descriptions whenever language changes
+    socket.on("reportStatusChanged", ({ report }) => {
+      if (report && report.nagarId === nagarId) {
+        setIssues((prev) =>
+          prev.map((r) => (r.reportId === report.reportId ? report : r))
+        );
+      }
+    });
+
+    return () => {
+      socket.off("assigned");
+      socket.off("reportStatusChanged");
+    };
+  }, []);
+
+  // ✅ Translate whenever language changes
   useEffect(() => {
     if (issues.length === 0) return;
 
     const fetchTranslations = async () => {
       const titles = issues.map((issue) => issue.title);
       const descriptions = issues.map((issue) => issue.description);
-
-      // 👇 English stays "en", others use -IN
       const langCode = `${i18n.language}-IN`;
 
       try {
-        // Translate titles
         const resTitles = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/translate`,
-          {
-            texts: titles,
-            targetLanguage: langCode,
-          }
+          { texts: titles, targetLanguage: langCode }
         );
         setTranslatedTitles(resTitles.data.translatedTexts);
 
-        // Translate descriptions
         const resDescriptions = await axios.post(
           `${import.meta.env.VITE_BACKEND_URL}/translate`,
-          {
-            texts: descriptions,
-            targetLanguage: langCode,
-          }
+          { texts: descriptions, targetLanguage: langCode }
         );
         setTranslatedDescriptions(resDescriptions.data.translatedTexts);
-
       } catch (err) {
         console.error("Translation failed:", err);
-        setTranslatedTitles(titles); // fallback
-        setTranslatedDescriptions(descriptions); // fallback
+        setTranslatedTitles(titles);
+        setTranslatedDescriptions(descriptions);
       }
     };
 
     fetchTranslations();
   }, [i18n.language, issues]);
 
+  // ✅ Handle upvote click
+  const handleUpvote = (id) => {
+    setUpvotes((prev) => ({
+      ...prev,
+      [id]: (prev[id] || 0) + 1,
+    }));
+  };
+
   const filteredIssues = issues.filter(
     (issue) =>
       (statusFilter === "all" || issue.status === statusFilter) &&
-      (departmentFilter === "all" || issue.department === departmentFilter)
+      (departmentFilter === "all" || issue.department === departmentFilter) 
   );
 
   return (
@@ -142,7 +164,6 @@ export default function PublicHome() {
               key={issue._id}
               className="relative w-full bg-white/70 backdrop-blur-lg rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-gray-200 shadow-md hover:shadow-2xl hover:scale-[1.01] transition-all duration-300"
             >
-              {/* Glow border effect */}
               <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-indigo-200/40 via-pink-200/40 to-yellow-200/40 opacity-0 hover:opacity-100 transition duration-700 pointer-events-none"></div>
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
@@ -178,19 +199,34 @@ export default function PublicHome() {
                   </p>
                 </div>
 
-                {/* Status Badge */}
-                <div className="flex-shrink-0">
+                {/* Right Section */}
+                <div className="flex md:flex-col md:justify-evenly flex-row items-end gap-3">
+                  {/* Status Badge */}
                   <span
                     className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm md:text-base font-semibold shadow-md transition ${
-                      issue.status === "processing"
+                      issue.status === "inprogress"
                         ? "bg-gradient-to-r from-yellow-300 to-yellow-500 text-yellow-900 shadow-yellow-200"
-                        : issue.status === "completed"
-                        ? "bg-gradient-to-r from-green-300 to-green-500 text-green-900 shadow-green-200"
+                        : issue.status === "approved"
+                        ? "bg-gradient-to-r from-blue-300 to-blue-500 text-blue-900 shadow-blue-200"
                         : "bg-gradient-to-r from-red-300 to-red-500 text-red-900 shadow-red-200"
                     }`}
                   >
                     {t(issue.status)}
                   </span>
+
+                  {/* 🆕 Upvote Button */}
+                  <div className="flex  items-center gap-2 w-full rounded-full">
+                    <button
+                      onClick={() => handleUpvote(issue._id)}
+                      className="px-3 py-1 bg-blue-500 h-7 md:h-10 text-white rounded-full hover:bg-blue-600 text-sm"
+                    >
+                      👍 {t("upvote")} 
+                      <span className="ml-1 text-white text-sm font-semibold">
+                      {upvotes[issue._id] || 0}
+                    </span>
+                    </button>
+                    
+                  </div>
                 </div>
               </div>
             </div>

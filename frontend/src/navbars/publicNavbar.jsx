@@ -2,11 +2,22 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next"; // ✅ import translation hook
+import { googleAuth } from "../utils/firebase.js";
+import axios from "axios";
+import  toast  from "react-hot-toast";
+import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from "react-redux";
+import { setEmail, clearEmail } from "../store/authSlice";
+
 
 export default function PublicNavbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { t, i18n } = useTranslation(); // ✅ get translator
+  const email = useSelector((state) => state.auth.email);
+  const dispatch = useDispatch();
+
+  const navigate = useNavigate() ;
 
   const links = [
     { name: "comeOut", path: "/" },
@@ -21,9 +32,29 @@ export default function PublicNavbar() {
     i18n.changeLanguage(e.target.value);
   };
 
+  async function handleGoogleAuth(){
+       try{
+          navigate("/public/signUp") ;
+       }catch(err){
+           console.log(err) ;
+           toast.error(err.response.data.message) ;
+       }
+   }
+
+   function handleLogOut(){
+        dispatch(clearEmail());
+        toast.success("user logged out in successfully") ;
+       // localStorage.removeItem("myLocation") ;
+      //  localStorage.removeItem("center") ;
+      //  localStorage.removeItem("nagarId") ;
+        
+
+   }
+
+
   return (
     <nav className="bg-gradient-to-r from-indigo-500 via-pink-500 to-yellow-500 shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 ">
         <div className="flex justify-between h-16 items-center">
           <div className="text-white font-bold text-2xl">{t("civicConnect")}</div>
 
@@ -51,16 +82,35 @@ export default function PublicNavbar() {
             })}
 
             {/* ✅ Language Dropdown */}
+             
+            <div className="flex flex-row-reverse  items-center"> 
             <select
               onChange={changeLanguage}
               defaultValue="en"
-              className="ml-4 border px-2 py-1 rounded bg-white text-indigo-600 font-medium"
+              className="mt-2 mx-1 w-full border px-2 py-1 rounded bg-white text-indigo-600 font-medium"
             >
               <option value="en">English</option>
               <option value="hi">हिंदी</option>
               <option value="ta">தமிழ்</option>
               <option value="bn">বাংলা</option>
+              <option value="ta">ગુજરાતી</option>
+              <option value="bn">मराठी</option>
             </select>
+            <button
+  onClick={email ? handleLogOut : handleGoogleAuth}
+  className="
+    px-5 py-1 mt-2
+    rounded
+    font-semibold 
+    shadow-lg 
+    bg-gradient-to-r hover:from-indigo-500 hover:via-pink-500 hover:to-yellow-500 
+  text-white
+    transition-all duration-300 ease-in-out
+  "
+>
+  {email ? t("logout") : t("register")}
+</button>
+            </div>
           </div>
 
           {/* Mobile Button */}
@@ -98,6 +148,7 @@ export default function PublicNavbar() {
             })}
 
             {/* ✅ Language Dropdown in Mobile Menu */}
+            <div className="flex flex-col-reverse items-center">
             <select
               onChange={changeLanguage}
               defaultValue="en"
@@ -107,7 +158,27 @@ export default function PublicNavbar() {
               <option value="hi">हिंदी</option>
               <option value="ta">தமிழ்</option>
               <option value="bn">বাংলা</option>
+              <option value="ta">ગુજરાતી</option>
+              <option value="bn">मराठी</option>
             </select>
+             <button
+  onClick={email ? handleLogOut : handleGoogleAuth}
+  className="
+    px-5 py-1 
+    rounded
+    bg-white/90
+    text-indigo-600 
+    font-semibold 
+    shadow-lg 
+    hover:bg-gradient-to-r hover:from-indigo-500 hover:via-pink-500 hover:to-yellow-500 
+    hover:text-white
+    transition-all duration-300 ease-in-out
+  "
+>
+  {email ? "Log Out" : "Resister"}
+</button>
+            </div>
+
           </div>
         </div>
       )}

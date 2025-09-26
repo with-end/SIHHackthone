@@ -6,7 +6,7 @@ export default function PublicLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicNavbar />
-      <div className="  lg:p-8 ">
+      <div className="   ">
         <Outlet /> {/* This will render the current page (Home, Report, etc.) */}
       </div>
     </div>

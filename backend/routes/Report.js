@@ -19,13 +19,13 @@ const upload = multer({ storage: storage });
 // CREATE REPORT
 router.post("/:nagarId", upload.fields([{ name: "image" }]), async (req, res) => {
   try {
-    const { reporterEmail, title, description, location } = req.body;
+    let { reporterEmail, title, description, location } = req.body;
     const { image } = req.files || {};
     const { nagarId } = req.params;
-    
+    location = JSON.parse(location) ;
 
     if (!reporterEmail || !title || !description || !location || !image) {
-      return res.status(400).json({ error: "missing required Fields" });
+      return res.status(200).json({ message : "missing field" });
     }
 
     // Upload image immediately (to avoid losing file if queue worker runs later)
@@ -33,24 +33,119 @@ router.post("/:nagarId", upload.fields([{ name: "image" }]), async (req, res) =>
       `data:${image[0].mimetype};base64,${image[0].buffer.toString("base64")}`
     );
 
+   const  imageUrl= secure_url ;
+   const  imageId = public_id ;
+
 
     // Push into queue
-    await reportQueue.add({
-      reporterEmail,
-      title,
-      description,
-      location: JSON.parse(location),
-      nagarId,
-      imageUrl: secure_url,
-      imageId: public_id,
-    });
+    // await reportQueue.add({
+    //   reporterEmail,
+    //   title,
+    //   description,
+    //   location: JSON.parse(location),
+    //   nagarId,
+    //   imageUrl: secure_url,
+    //   imageId: public_id,
+    // });/
+    
+     const department = await classifyDepartment(description);
+    
+        if( department==="inValid"){
+            return res.status(200).json({ message : "not" });
+        }
+        const descVector = await generateTextVector(description);
+        let priority = 0;
+    
+        // Find nearby reports for duplicate check
+        const [lng, lat] = location.coordinates;
+        const nearbyReports = await Report.find({
+          nagarId,
+          department,
+          location: {
+            $near: { $geometry: { type: "Point", coordinates: [lng, lat] }, $maxDistance: 200 }
+          }
+        });
+    
+        // Duplicate check
+        for (const candidate of nearbyReports) {
+          if (!candidate.descriptionVector.length) continue;
+          const descSim = cosineSimilarity(descVector, candidate.descriptionVector);
+          if (descSim > 0.85) {
+            await Report.findByIdAndUpdate(candidate._id, { $inc: { priority: 20 } });
+            await sendMail(reporterEmail, "duplicate", candidate.reportId);
+            return res.status(200).json({ message : "duplicate" });
+          }
+        }
+    
+        // Importance check (hospital/school)
+        const nearImportant = await hasHospitalOrSchool(lat, lng);
+        if (nearImportant) priority += 50;
+    
+        // Officer assignment
+        let givenOfficer = null;
+        const nagar = await NagarPalika.findOne({ nagarId }).populate(`${department}.officers`);
+        const officers = nagar[department].officers;
+        for (const officer of officers) {
+          if (officer.status === "active") {
+            givenOfficer = officer._id;
+            await Officer.findByIdAndUpdate(officer._id, { status: "busy" });
+            break;
+          }
+        }
+    
+        // Create new report
+        const repId = (await Report.countDocuments()) + 1;
+        const report = await Report.create({
+          reporterEmail,
+          title,
+          description,
+          imageUrl,
+          imageId,
+          descriptionVector: descVector,
+          priority,
+          department,
+          nagarId,
+          location,
+          reportId: `ISSUE-${repId}`,
+          assignedOfficer: givenOfficer
+        });
+    
+        await sendMail(reporterEmail, "submitted", report.reportId);
+    
+        // Emit report to all connected clients
+    
+        // Update Officer/NagarPalika assignments
+        if (!givenOfficer) {
+          await NagarPalika.findOneAndUpdate(
+            { nagarId },
+            {
+              $push: {
+                [`${department}.pendingReports`]: report._id,
+                [`${department}.reports`]: report._id
+              },
+              $inc: { [`${department}.stats.pending`]: 1 }
+            }
+          );
+        } else {
+          await Officer.findByIdAndUpdate(givenOfficer, { $push: { assignedReports: report._id } });
+          await NagarPalika.findOneAndUpdate(
+            { nagarId },
+            {
+              $push: { [`${department}.reports`]: report._id },
+              $inc: { [`${department}.stats.pending`]: 1 }
+            }
+          );
+        }
+        const io = req.app.get("io") ;
+        console.log("report:" , report ) ;
+        io.emit("assigned", report);
 
    
 
     // Instant response (no blocking)
-    res.json({
+    res.status(200).json({
       success: true,
-      message: "Report submitted successfully! You’ll receive Issue ID via email."
+      message: "reportSubmitted"
     });
 
   } catch (err) {
@@ -67,7 +162,7 @@ router.post("/:nagarId", upload.fields([{ name: "image" }]), async (req, res) =>
 router.get("/:nagarId", async (req, res) => {
   try {
     const { nagarId } = req.params;
-    const reports = await Report.find({ nagarId });
+    const reports = await Report.find({ nagarId , status: { $ne : "completed" } });
     const io = req.app.get("io");
     io.emit("nagarId", nagarId);
     res.json(reports);
@@ -101,7 +196,7 @@ router.get("/com/completed", async (req, res) => {
   try {
     const { nagarId } = req.query;
     const reports = await Report.find({ nagarId, status: "completed" });
-    console.log(reports) ;
+
     res.json(reports);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -4,7 +4,7 @@ const app = express();
 const dbConnect = require("./config/dbConnect.js");
 const cloudinaryConfig = require("./config/cloudinaryConfig.js");
 const dotenv = require("dotenv");
-const { PORT, FRONTEND_URL, UPSTASH_TCP_URL } = require("./config/dotenv.config.js");
+const { PORT, FRONTEND_URL } = require("./config/dotenv.config.js");
 dotenv.config();
 
 const nagarPalikaRoutes = require("./routes/nagarPalika.js");
@@ -15,39 +15,17 @@ const officersRoutes = require("./routes/officer.js");
 const translationRoutes = require("./routes/translation.js");
 const http = require("http");
 const { Server } = require("socket.io");
-const { createAdapter } = require("@socket.io/redis-adapter");
-const { createClient } = require("redis");
 
 // Create HTTP server for Express + Socket.IO
 const server = http.createServer(app);
 
-// Initialize Socket.IO
+// Initialize Socket.IO (pure frontend real-time)
 const io = new Server(server, {
   cors: {
     origin: FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 });
-
-// Setup Redis adapter for Socket.IO (works across multiple processes, e.g., worker)
-const pubClient = createClient({ url: process.env.UPSTASH_TCP_URL });
-const subClient = pubClient.duplicate();
-
-(async () => {
-  try {
-    await pubClient.connect();
-    console.log("✅ pubClient connected to Redis");
-
-    await subClient.connect();
-    console.log("✅ subClient connected to Redis");
-
-    io.adapter(createAdapter(pubClient, subClient));
-    console.log("✅ Redis adapter initialized for Socket.IO");
-  } catch (err) {
-    console.error("❌ Redis connection failed:", err);
-  }
-})();
-
 
 // Make io available in routes if needed
 app.set("io", io);
@@ -67,12 +45,19 @@ app.use("/api", departmentRoutes);
 app.use("/api/officer", officersRoutes);
 app.use("/api", translationRoutes);
 
-// Socket.IO events
+// Socket.IO events (frontend real-time)
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
+  });
+
+  // Example: handle a custom event
+  socket.on("updateFrontend", (data) => {
+    console.log("Frontend update received:", data);
+    // Broadcast to all other clients
+    socket.broadcast.emit("updateFrontend", data);
   });
 });
 
@@ -82,4 +67,3 @@ server.listen(PORT, () => {
   dbConnect();
   cloudinaryConfig();
 });
-

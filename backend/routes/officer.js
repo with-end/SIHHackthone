@@ -27,7 +27,7 @@ officerRouter.post("/:officerId/status", async (req, res) => {
   try {
     const { status } = req.body;
     const officer = await Officer.findByIdAndUpdate(req.params.officerId, { status }, { new: true });
-
+    console.log(status , officer) ;
     if (status === "active") {
       // find pending reports from officer’s department
       const nagar = await NagarPalika.findOne({ nagarId : officer.nagarId }) ;
@@ -97,6 +97,7 @@ const io = req.app.get("io");
     
 
 if (updatedOfficer.assignedReports.length === 0) {
+  
   updatedOfficer.status = "active";
   await updatedOfficer.save();
   io.emit("status", updatedOfficer); 
