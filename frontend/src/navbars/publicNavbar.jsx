@@ -43,7 +43,7 @@ export default function PublicNavbar() {
 
    function handleLogOut(){
         dispatch(clearEmail());
-        toast.success("user logged out in successfully") ;
+        toast.success("user logged out successfully") ;
        // localStorage.removeItem("myLocation") ;
       //  localStorage.removeItem("center") ;
       //  localStorage.removeItem("nagarId") ;

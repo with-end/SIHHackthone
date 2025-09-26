@@ -14,11 +14,15 @@ const authSlice = createSlice({
         localStorage.setItem("emailId", action.payload);
       } else {
         localStorage.removeItem("emailId");
+        
       }
     },
     clearEmail: (state) => {
       state.email = null;
       localStorage.removeItem("emailId");
+      localStorage.removeItem("nagarId") ;
+      localStorage.removeItem("myLocation") ;
+      localStorage.removeItem("center") ;
     },
   },
 });
